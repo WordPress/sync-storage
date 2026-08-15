@@ -1,0 +1,35 @@
+{
+	"name": "wordpress/realtime-collaboration",
+	"license": "GPL-2.0-or-later",
+	"description": "Storage layer for real-time collaborative editing in WordPress.",
+	"require": {
+		"php": ">=8.0"
+	},
+	"require-dev": {
+		"squizlabs/php_codesniffer": "3.13.6",
+		"wp-coding-standards/wpcs": "~3.4.0",
+		"phpcompatibility/phpcompatibility-wp": "~2.1.3",
+		"phpstan/phpstan": "2.2.7",
+		"php-stubs/wordpress-stubs": "^6.9",
+		"php-stubs/wp-cli-stubs": "^2.12",
+		"phpunit/phpunit": "^9.6",
+		"yoast/phpunit-polyfills": "^4.0"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"lock": false,
+		"audit": {
+			"ignore": {
+				"PKSA-rdkp-vv9z-mjkg": "XSS in PHPCS HTML report output; not triggered by CI linting use",
+				"PKSA-6vdd-n4sx-knhy": "XSS in PHPCS HTML report output; not triggered by CI linting use"
+			}
+		}
+	},
+	"scripts": {
+		"phpcs": "@php ./vendor/bin/phpcs",
+		"phpcbf": "@php ./vendor/bin/phpcbf",
+		"phpstan": "@php ./vendor/bin/phpstan analyse --memory-limit=2G"
+	}
+}
