@@ -12,7 +12,7 @@ Storage layer for real-time collaborative editing in WordPress.
 Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in `post_meta`, causing site-wide cache invalidation on every edit ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin provides a dedicated `wp_collaboration` table for CRDT updates and integrates with the Presence API for awareness, eliminating cache side effects.
 
 > [!WARNING]
-> **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. A PR is needed to add `apply_filters( 'gutenberg_sync_storage', ... )` to make this plugin functional.
+> **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. See [#81697](https://github.com/WordPress/gutenberg/pull/81697) to track the PR adding this filter.
 
 ## Run locally
 
@@ -92,6 +92,7 @@ Maintained by [@josephfusco](https://github.com/josephfusco). Discussion: [#feat
 ## Related
 
 - [Presence API](https://github.com/WordPress/presence-api) - Required dependency
+- [Gutenberg #81697](https://github.com/WordPress/gutenberg/pull/81697) - Storage filter PR (blocker)
 - [Gutenberg #80387](https://github.com/WordPress/gutenberg/issues/80387) - RTC provider gating
 - [Trac #64696](https://core.trac.wordpress.org/ticket/64696) - Cache invalidation issue
 - [wordpress-develop #11609](https://github.com/WordPress/wordpress-develop/pull/11609) - Core integration exploration
