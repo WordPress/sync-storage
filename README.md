@@ -1,6 +1,7 @@
 # Realtime Collaboration
 
 [![CI](https://github.com/josephfusco/realtime-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/josephfusco/realtime-collaboration/actions/workflows/ci.yml)
+[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint.json)
 
 > **Status:** Experimental feature plugin
 
@@ -13,9 +14,7 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 > [!WARNING]
 > **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. A PR is needed to add `apply_filters( 'gutenberg_sync_storage', ... )` to make this plugin functional.
 
-## Try it
-
-[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint.json)
+## Run locally
 
 Or run locally:
 
