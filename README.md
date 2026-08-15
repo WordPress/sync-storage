@@ -1,28 +1,42 @@
 # Realtime Collaboration
 
+[![CI](https://github.com/josephfusco/realtime-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/josephfusco/realtime-collaboration/actions/workflows/ci.yml)
+
+> **Status:** Experimental feature plugin
+
 Storage layer for real-time collaborative editing in WordPress.
-
-[![WordPress Plugin Required Version](https://img.shields.io/badge/WordPress-7.0%2B-blue.svg)](https://wordpress.org/)
-[![PHP Required Version](https://img.shields.io/badge/PHP-8.0%2B-purple.svg)](https://www.php.net/)
-[![License](https://img.shields.io/badge/License-GPL--2.0--or--later-green.svg)](LICENSE)
-
-[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint.json)
 
 ## Problem
 
-Gutenberg's RTC feature stores sync data in `post_meta`, causing site-wide cache invalidation on every edit. This plugin provides a dedicated `wp_collaboration` table and integrates with Presence API for awareness, eliminating cache side effects.
-
-## Requirements
-
-| Requirement | Version | Status |
-|------------|---------|--------|
-| WordPress | 7.0+ | ✅ |
-| PHP | 8.0+ | ✅ |
-| [Presence API](https://github.com/WordPress/presence-api) | Latest | ✅ |
-| [Gutenberg](https://wordpress.org/plugins/gutenberg/) | with `gutenberg_sync_storage` filter | ⚠️ Pending |
+Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in `post_meta`, causing site-wide cache invalidation on every edit ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin provides a dedicated `wp_collaboration` table for CRDT updates and integrates with the Presence API for awareness, eliminating cache side effects.
 
 > [!WARNING]
-> **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. A PR is needed to add `apply_filters( 'gutenberg_sync_storage', ... )`.
+> **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. A PR is needed to add `apply_filters( 'gutenberg_sync_storage', ... )` to make this plugin functional.
+
+## Try it
+
+[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint.json)
+
+Or run locally:
+
+```bash
+npm install
+npx wp-env start
+```
+
+Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).
+
+## Data flow
+
+1. Gutenberg editor sends awareness state via `Gutenberg_Sync_Storage::set_awareness_state()`
+2. Plugin delegates to `wp_set_presence()` (zero cache impact)
+3. Gutenberg sends CRDT updates via `Gutenberg_Sync_Storage::add_update()`
+4. Plugin writes to `wp_collaboration` table (zero cache impact)
+5. Server detects 2+ editors via Presence API lifecycle hooks
+6. Fires `wp_presence_collaboration_started` action
+7. Plugin flags post as `_rtc_collaboration_active`
+8. Heartbeat response includes collaboration signal
+9. Gutenberg initializes Yjs sync
 
 ## Architecture
 
@@ -38,24 +52,43 @@ RTC_Presence_Storage (this plugin)
     └── Updates → INSERT → wp_collaboration table
 ```
 
-**Provides:**
+## What this plugin provides
+
 - `wp_collaboration` table for CRDT update storage
 - `Gutenberg_Sync_Storage` interface implementation
-- Server authority (RTC activates when 2+ editors detected)
-- Zero cache side effects
+- Server authority model (RTC activates when 2+ editors detected)
+- Zero cache side effects (dedicated table, not post meta)
 
-**Does not provide:**
-- HTTP polling provider (stays in Gutenberg)
-- REST endpoints (stays in Gutenberg)
-- Editor UI (cursors, avatars - stays in Gutenberg)
+## What stays in Gutenberg
 
-## Development
+- HTTP polling provider
+- REST endpoints (`/wp/v2/sync/updates`)
+- Editor UI (cursors, avatars, selection indicators)
+- Yjs CRDT library
 
-```bash
-npm install && composer install
-npx wp-env start
-composer test
+## Actions
+
+### `rtc_collaboration_room_active`
+
+Fires when collaboration starts (2+ editors detected).
+
+```php
+add_action( 'rtc_collaboration_room_active', function( $post_id, $entries ) {
+    // Custom logic when RTC activates
+}, 10, 2 );
 ```
+
+### `rtc_collaboration_room_inactive`
+
+Fires when collaboration ends (back to single editor).
+
+```php
+add_action( 'rtc_collaboration_room_inactive', function( $post_id, $entries ) {
+    // Custom logic when RTC deactivates
+}, 10, 2 );
+```
+
+## Maintainers
 
 Maintained by [@josephfusco](https://github.com/josephfusco). Discussion: [#feat-realtime-collaboration](https://wordpress.slack.com/archives/C07NVJ51X6K)
 
