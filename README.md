@@ -18,7 +18,7 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 
 [![Open Test Blueprint](https://img.shields.io/badge/Test%20Demo-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint-test.json)
 
-Loads with Gutenberg (from draft PR) + presence-api + realtime-collaboration. Opens Hello World post with seeded collaborators. Open in 2+ tabs to see real-time collaboration activate.
+Loads with Gutenberg (from draft PR) + presence-api + realtime-collaboration. Opens Hello World post with seeded collaborators showing what the collaboration toolbar looks like. To test live editing, duplicate the Playground URL in multiple browser tabs.
 
 ## Run locally
 
