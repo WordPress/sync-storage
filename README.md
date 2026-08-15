@@ -1,12 +1,17 @@
 # Realtime Collaboration
 
-> **Status:** Experimental feature plugin
+[![WordPress Plugin Required Version](https://img.shields.io/badge/WordPress-7.0%2B-blue.svg)](https://wordpress.org/)
+[![PHP Required Version](https://img.shields.io/badge/PHP-8.0%2B-purple.svg)](https://www.php.net/)
+[![License](https://img.shields.io/badge/License-GPL--2.0--or--later-green.svg)](LICENSE)
 
-Storage layer for real-time collaborative editing in WordPress.
+> [!NOTE]
+> **Experimental feature plugin** - Storage layer for real-time collaborative editing in WordPress.
 
 ## Try it
 
 [![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint.json)
+
+---
 
 ## Problem
 
@@ -14,26 +19,32 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 
 ## Requirements
 
-- WordPress 7.0+
-- PHP 8.0+
-- [Presence API](https://github.com/WordPress/presence-api) plugin
-- [Gutenberg](https://wordpress.org/plugins/gutenberg/) plugin with `gutenberg_sync_storage` filter
-  - ⚠️ **Blocker:** The filter doesn't exist yet. Needs Gutenberg PR to add `apply_filters( 'gutenberg_sync_storage', ... )`
+| Requirement | Version | Status |
+|------------|---------|--------|
+| WordPress | 7.0+ | ✅ |
+| PHP | 8.0+ | ✅ |
+| [Presence API](https://github.com/WordPress/presence-api) | Latest | ✅ |
+| [Gutenberg](https://wordpress.org/plugins/gutenberg/) | with `gutenberg_sync_storage` filter | ⚠️ Pending |
+
+> [!WARNING]
+> **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. A PR is needed to add `apply_filters( 'gutenberg_sync_storage', ... )` to make this plugin functional.
 
 ## What This Plugin Does
 
-- Provides `wp_collaboration` table for CRDT update storage
-- Integrates Presence API for awareness (cursors, user metadata)
-- Implements `Gutenberg_Sync_Storage` interface
-- Server authority: RTC activates automatically when 2+ editors detected
+**Provides:**
+- `wp_collaboration` table for CRDT update storage
+- Integration with Presence API for awareness (cursors, user metadata)
+- Implementation of `Gutenberg_Sync_Storage` interface
+- Server authority model (RTC activates when 2+ editors detected)
 - Zero cache side effects (dedicated table, not post meta)
 
 ## What It Doesn't Do
 
-- ❌ Replace Gutenberg's HTTP polling provider (stays in Gutenberg)
-- ❌ Own REST endpoints (Gutenberg keeps `/wp/v2/sync/updates`)
-- ❌ Change editor UI (cursors, avatars handled by Gutenberg)
-- ❌ Modify Presence API (it's a primitive, plugin is a consumer)
+**Out of Scope:**
+- Gutenberg's HTTP polling provider (remains in Gutenberg)
+- REST endpoints (Gutenberg keeps `/wp/v2/sync/updates`)
+- Editor UI features (cursors, avatars handled by Gutenberg)
+- Presence API modifications (plugin is a consumer, not a modifier)
 
 ## Architecture
 
@@ -68,7 +79,8 @@ The plugin will display admin notices if:
 
 ## Database Schema
 
-### `wp_collaboration` Table
+<details>
+<summary><strong>wp_collaboration</strong> table structure</summary>
 
 ```sql
 CREATE TABLE wp_collaboration (
@@ -83,34 +95,55 @@ CREATE TABLE wp_collaboration (
 );
 ```
 
-- **room**: Entity identifier (e.g., `postType/post:42`)
-- **client_id**: Yjs client ID
-- **type**: Update type (`update`, `sync_step1`, `sync_step2`, `compaction`)
-- **data**: Base64-encoded Yjs update (opaque to server)
-- **timestamp**: Milliseconds since epoch (Yjs format)
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `bigint(20) unsigned` | Auto-increment primary key |
+| `room` | `varchar(191)` | Entity identifier (e.g., `postType/post:42`) |
+| `client_id` | `bigint(20) unsigned` | Yjs client ID |
+| `type` | `varchar(20)` | Update type (`update`, `sync_step1`, `sync_step2`, `compaction`) |
+| `data` | `longtext` | Base64-encoded Yjs update (opaque to server) |
+| `timestamp` | `bigint(20) unsigned` | Milliseconds since epoch (Yjs format) |
+
+</details>
 
 ## How It Works
 
-### Single Editor
+<table>
+<tr>
+<th>Single Editor</th>
+<th>Second Editor Joins</th>
+<th>Second Editor Leaves</th>
+</tr>
+<tr>
+<td valign="top">
+
 1. User opens post in Gutenberg
 2. Presence API tracks: 1 editor active
-3. RTC plugin returns empty awareness (no overhead)
+3. RTC plugin returns empty awareness
 4. Gutenberg runs in single-user mode
 
-### Second Editor Joins
+</td>
+<td valign="top">
+
 1. Second user opens same post
 2. Presence API detects: 1→2 editors
-3. Fires: `wp_presence_collaboration_started` action
-4. RTC plugin flags post: `_rtc_collaboration_active = true`
-5. Both editors' Heartbeat gets: `X-WP-Collaboration-Active: true`
-6. Gutenberg initializes Yjs, cursors/selections sync
+3. Fires `wp_presence_collaboration_started`
+4. Plugin flags post as active
+5. Heartbeat sends collaboration signal
+6. Gutenberg initializes Yjs sync
 
-### Second Editor Leaves
+</td>
+<td valign="top">
+
 1. Presence entry expires (60s TTL)
 2. Presence API detects: 2→1 editors
-3. Fires: `wp_presence_collaboration_ended`
-4. RTC plugin clears flag
-5. Remaining editor returns to single-user mode
+3. Fires `wp_presence_collaboration_ended`
+4. Plugin clears collaboration flag
+5. Remaining editor returns to single-user
+
+</td>
+</tr>
+</table>
 
 ## Cleanup
 
@@ -118,69 +151,122 @@ CREATE TABLE wp_collaboration (
 - **Safety net:** Daily cron deletes updates >7 days old
 - **Migration:** Automatic migration from `wp_sync_storage` post meta on activation
 
-## Actions
+## Developer Hooks
 
-### `rtc_collaboration_room_active`
-Fires when collaboration starts (2+ editors).
+### Actions
 
+<details>
+<summary><code>rtc_collaboration_room_active</code></summary>
+
+Fires when collaboration starts (2+ editors detected).
+
+**Parameters:**
+- `$post_id` (int) - The post ID where collaboration started
+- `$entries` (array) - Presence entries for all active editors
+
+**Example:**
 ```php
 add_action( 'rtc_collaboration_room_active', function( $post_id, $entries ) {
-    // Custom logic when RTC activates
+    // Log when collaborative editing starts
+    error_log( "RTC started on post {$post_id} with " . count( $entries ) . " editors" );
 }, 10, 2 );
 ```
+</details>
 
-### `rtc_collaboration_room_inactive`
-Fires when collaboration ends (back to 1 editor).
+<details>
+<summary><code>rtc_collaboration_room_inactive</code></summary>
 
+Fires when collaboration ends (back to single editor).
+
+**Parameters:**
+- `$post_id` (int) - The post ID where collaboration ended
+- `$entries` (array) - Remaining presence entries
+
+**Example:**
 ```php
-add_action( 'rtc_collaboration_room_inactive', function( $post_id ) {
-    // Custom logic when RTC deactivates
-}, 10, 1 );
+add_action( 'rtc_collaboration_room_inactive', function( $post_id, $entries ) {
+    // Clean up when collaboration ends
+    delete_post_meta( $post_id, '_custom_rtc_flag' );
+}, 10, 2 );
 ```
+</details>
 
-## Multisite
+## Multisite Support
 
-Supported. Tables are created per-site, not globally.
+✅ **Fully supported** - Tables are created per-site, not globally.
 
-On network activation, creates `wp_collaboration` table on all sites.
+On network activation, automatically creates `wp_collaboration` table on all sites.
 
 ## Security
 
-- Capability checks: `current_user_can( 'edit_post', $post_id )`
-- Room format validation (SQL injection prevention)
-- Prepared statements for all queries
-- Defensive checks for Presence API availability
+**Built-in protections:**
+- ✅ Capability checks via `current_user_can( 'edit_post', $post_id )`
+- ✅ Room format validation (SQL injection prevention via regex)
+- ✅ Prepared statements for all database queries
+- ✅ Defensive checks for Presence API availability
+- ✅ No data exposed without proper authentication
+
+---
 
 ## Development
 
-### Local Setup
+<details>
+<summary><strong>Local Setup</strong></summary>
 
 ```bash
+# Install dependencies
 npm install
+composer install
+
+# Start wp-env (WordPress + Gutenberg)
 npx wp-env start
+
+# The site will be available at:
+# http://localhost:8888 (username: admin, password: password)
 ```
 
-### Testing
+</details>
+
+<details>
+<summary><strong>Testing</strong></summary>
 
 ```bash
-composer install
-vendor/bin/phpunit
+# Run PHPUnit tests
+composer test
+
+# Run PHPCS linting
+composer lint
+
+# Run PHPStan static analysis
+composer analyze
 ```
+
+</details>
+
+---
 
 ## Maintainers
 
-- [@josephfusco](https://github.com/josephfusco)
+Maintained by [@josephfusco](https://github.com/josephfusco)
 
-Sponsored by the [Core team](https://make.wordpress.org/core/). Updates posted on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#realtime-collaboration`.
+Sponsored by the [WordPress Core team](https://make.wordpress.org/core/). Updates posted on [make.wordpress.org/core](https://make.wordpress.org/core/) with tag `#realtime-collaboration`.
 
 ## Support
 
-Questions and bug reports: [GitHub Issues](https://github.com/josephfusco/realtime-collaboration/issues).
+- **Bug reports & features:** [GitHub Issues](https://github.com/josephfusco/realtime-collaboration/issues)
+- **Discussion:** [#realtime-collaboration](https://wordpress.slack.com/archives/realtime-collaboration) on WordPress Slack
 
-Discussion: [#realtime-collaboration](https://wordpress.slack.com/archives/realtime-collaboration) on WordPress Slack
+## Related Projects
 
-## Related
+| Project | Description |
+|---------|-------------|
+| [Presence API](https://github.com/WordPress/presence-api) | Awareness infrastructure (required dependency) |
+| [Gutenberg #80387](https://github.com/WordPress/gutenberg/issues/80387) | RTC provider gating discussion |
+| [Trac #64696](https://core.trac.wordpress.org/ticket/64696) | RTC cache invalidation issue |
+| [wordpress-develop #11609](https://github.com/WordPress/wordpress-develop/pull/11609) | Prior exploration of core integration |
 
-- [Presence API](https://github.com/WordPress/presence-api) - Awareness infrastructure
-- [Gutenberg Issue #80387](https://github.com/WordPress/gutenberg/issues/80387) - RTC provider gating
-- [WordPress Trac #64696](https://core.trac.wordpress.org/ticket/64696) - RTC cache invalidation
+---
+
+<p align="center">
+Made with ❤️ for WordPress
+</p>
