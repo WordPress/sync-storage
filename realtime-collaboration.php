@@ -6,7 +6,7 @@
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Requires Plugins: presence-api
- * Author: WordPress Contributors
+ * Author: WordPress Core Team
  * Author URI: https://make.wordpress.org/core/
  * Text Domain: realtime-collaboration
  * License: GPL-2.0-or-later
