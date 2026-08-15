@@ -14,6 +14,12 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 > [!WARNING]
 > **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. See [#81697](https://github.com/WordPress/gutenberg/pull/81697) to track the PR adding this filter.
 
+## Test with Gutenberg PR
+
+[![Open Test Blueprint](https://img.shields.io/badge/Test%20with%20PR-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint-test.json)
+
+Installs Gutenberg from PR branch + presence-api + realtime-collaboration. Open a post in 2 tabs to verify RTC activates.
+
 ## Run locally
 
 ```bash
