@@ -17,7 +17,8 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 - WordPress 7.0+
 - PHP 8.0+
 - [Presence API](https://github.com/WordPress/presence-api) plugin
-- Gutenberg with `gutenberg_sync_storage` filter (coming in future release)
+- [Gutenberg](https://wordpress.org/plugins/gutenberg/) plugin with `gutenberg_sync_storage` filter
+  - ⚠️ **Blocker:** The filter doesn't exist yet. Needs Gutenberg PR to add `apply_filters( 'gutenberg_sync_storage', ... )`
 
 ## What This Plugin Does
 
