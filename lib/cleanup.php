@@ -23,6 +23,7 @@ function rtc_cleanup_old_updates() {
 	// Delete updates older than 7 days (Yjs uses milliseconds).
 	$cutoff = ( time() - 7 * DAY_IN_SECONDS ) * 1000;
 
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$deleted = $wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->collaboration}
@@ -33,7 +34,7 @@ function rtc_cleanup_old_updates() {
 	);
 
 	if ( $deleted > 0 ) {
-		error_log(
+		error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			sprintf(
 				'RTC Collaboration: Cleaned up %d stale updates older than 7 days',
 				$deleted

@@ -44,6 +44,7 @@ function rtc_migrate_post_meta_storage() {
 		}
 
 		foreach ( $updates as $update ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$wpdb->insert(
 				$wpdb->collaboration,
 				array(
@@ -61,7 +62,7 @@ function rtc_migrate_post_meta_storage() {
 
 	update_option( 'rtc_migrated_from_post_meta', true );
 
-	error_log(
+	error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		sprintf(
 			'RTC Collaboration: Migrated %d updates from post meta to wp_collaboration table',
 			$migrated

@@ -4,6 +4,10 @@
 
 Storage layer for real-time collaborative editing in WordPress.
 
+## Try it
+
+[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint.json)
+
 ## Problem
 
 Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in `post_meta`, causing site-wide cache invalidation on every edit. This plugin provides a dedicated `wp_collaboration` table and integrates with the Presence API for awareness, eliminating cache side effects.

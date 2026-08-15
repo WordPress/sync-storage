@@ -1,0 +1,93 @@
+name: Playground Preview
+
+# Builds `realtime-collaboration.zip` from the PR commit and uploads it
+# (plus metadata) as workflow artifacts. The sibling `Playground Preview
+# Publish` workflow picks the artifacts up on `workflow_run` and hands
+# them to GitHub Releases for hosting — we don't depend on any
+# third-party artifact proxy.
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+
+      - name: Build realtime-collaboration.zip
+        run: |
+          set -euo pipefail
+          mkdir -p build/realtime-collaboration
+          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/realtime-collaboration/
+          (cd build && zip -qr realtime-collaboration.zip realtime-collaboration/)
+
+      - name: Smoke-test the build
+        run: |
+          set -euo pipefail
+          test -f build/realtime-collaboration/realtime-collaboration.php
+          find build/realtime-collaboration -name '*.php' -print0 \
+            | xargs -0 -n1 -P 4 php -l > /dev/null
+
+      - name: Schema-validate blueprint
+        run: |
+          set -euo pipefail
+          jq -e '
+            (.steps | length > 0)
+            and (.steps | all(.step | IN("installPlugin")))
+            and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url")) | length == 1)
+            and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "wordpress.org/plugins")) | length == 1)
+          ' blueprint.json > /dev/null
+
+      - name: Stage release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          cp build/realtime-collaboration.zip release-assets/
+
+      - name: Save PR metadata
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          jq -n \
+            --argjson pr "$PR_NUMBER" \
+            --arg sha "$HEAD_SHA" \
+            '{pr_number: $pr, head_sha: $sha}' > pr-meta.json
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-assets
+          path: release-assets/
+          retention-days: 14
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-meta
+          path: pr-meta.json
+          retention-days: 14
+          if-no-files-found: error
