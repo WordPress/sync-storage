@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="Presence API Coding Standards">
-	<description>WordPress Coding Standards for the Presence API plugin.</description>
+<ruleset name="Realtime Collaboration Coding Standards">
+	<description>WordPress Coding Standards for the Realtime Collaboration plugin.</description>
 
 	<arg name="extensions" value="php"/>
 	<arg name="basepath" value="./"/>
@@ -8,8 +8,8 @@
 	<arg value="ps"/>
 
 	<!-- Scan plugin source files. -->
-	<file>presence-api.php</file>
-	<file>includes/</file>
+	<file>realtime-collaboration.php</file>
+	<file>lib/</file>
 	<file>uninstall.php</file>
 
 	<!-- Exclude test and demo files from coding standards. -->
@@ -24,11 +24,11 @@
 	</rule>
 
 	<!-- Check for PHP cross-version compatibility. -->
-	<config name="testVersion" value="7.4-"/>
+	<config name="testVersion" value="8.0-"/>
 	<rule ref="PHPCompatibilityWP"/>
 
 	<!-- Verify text domain. -->
-	<config name="text_domain" value="presence-api"/>
+	<config name="text_domain" value="realtime-collaboration"/>
 
 	<!-- Set minimum supported WP version for deprecated function checks. -->
 	<config name="minimum_wp_version" value="7.0"/>
