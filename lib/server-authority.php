@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 add_action(
 	'wp_presence_collaboration_started',
-	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 	function ( $room, $entries ) {
 		// Extract post ID from room name (postType/post:42).
 		if ( ! preg_match( '/postType\/\w+:(\d+)/', $room, $matches ) ) {
@@ -38,7 +37,6 @@ add_action(
  */
 add_action(
 	'wp_presence_collaboration_ended',
-	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 	function ( $room, $entries ) {
 		if ( ! preg_match( '/postType\/\w+:(\d+)/', $room, $matches ) ) {
 			return;
@@ -49,7 +47,7 @@ add_action(
 		// Clear RTC flag.
 		delete_post_meta( $post_id, '_rtc_collaboration_active' );
 
-		do_action( 'rtc_collaboration_room_inactive', $post_id );
+		do_action( 'rtc_collaboration_room_inactive', $post_id, $entries );
 	},
 	10,
 	2
