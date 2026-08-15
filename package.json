@@ -1,0 +1,13 @@
+{
+	"name": "realtime-collaboration",
+	"private": true,
+	"scripts": {
+		"env:start": "wp-env start",
+		"env:stop": "wp-env stop",
+		"env:cli": "wp-env run cli wp",
+		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/realtime-collaboration' -- ./vendor/bin/phpunit --testdox"
+	},
+	"devDependencies": {
+		"@wordpress/env": "^11.12.0"
+	}
+}
