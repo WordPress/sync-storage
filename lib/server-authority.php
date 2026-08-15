@@ -38,6 +38,7 @@ add_action(
  */
 add_action(
 	'wp_presence_collaboration_ended',
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 	function ( $room, $entries ) {
 		if ( ! preg_match( '/postType\/\w+:(\d+)/', $room, $matches ) ) {
 			return;
