@@ -16,8 +16,6 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 
 ## Run locally
 
-Or run locally:
-
 ```bash
 npm install
 npx wp-env start
