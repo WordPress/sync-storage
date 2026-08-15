@@ -57,6 +57,8 @@ npx wp-env start
 composer test
 ```
 
+Maintained by [@josephfusco](https://github.com/josephfusco). Discussion: [#feat-realtime-collaboration](https://wordpress.slack.com/archives/C07NVJ51X6K)
+
 ## Related
 
 - [Presence API](https://github.com/WordPress/presence-api) - Required dependency
