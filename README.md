@@ -43,6 +43,8 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 ## Architecture
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed diagrams and data flow.
+
 ```
 Gutenberg Editor
     ↓
