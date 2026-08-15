@@ -30,6 +30,7 @@
 	"scripts": {
 		"phpcs": "@php ./vendor/bin/phpcs",
 		"phpcbf": "@php ./vendor/bin/phpcbf",
-		"phpstan": "@php ./vendor/bin/phpstan analyse --memory-limit=2G"
+		"phpstan": "@php ./vendor/bin/phpstan analyse --memory-limit=2G",
+		"test": "@php ./vendor/bin/phpunit --testdox"
 	}
 }
