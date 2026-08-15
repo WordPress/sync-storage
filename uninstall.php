@@ -12,6 +12,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 global $wpdb;
 
 // Remove collaboration table.
+// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}collaboration" );
 
 // Remove options.
@@ -27,6 +28,7 @@ if ( is_multisite() ) {
 	foreach ( $sites as $site ) {
 		switch_to_blog( $site->blog_id );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}collaboration" );
 		delete_option( 'rtc_collaboration_db_version' );
 		delete_option( 'rtc_migrated_from_post_meta' );

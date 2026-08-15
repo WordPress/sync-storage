@@ -117,6 +117,7 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$result = $wpdb->insert(
 			$wpdb->collaboration,
 			array(
@@ -146,6 +147,7 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT client_id, type, data, timestamp
@@ -158,7 +160,7 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 			ARRAY_A
 		);
 
-		return $results ?: array();
+		return $results ? $results : array();
 	}
 
 	/**
@@ -176,6 +178,7 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 		global $wpdb;
 
 		// Delete all updates for this room.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->delete(
 			$wpdb->collaboration,
 			array( 'room' => $room ),

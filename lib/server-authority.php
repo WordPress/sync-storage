@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 add_action(
 	'wp_presence_collaboration_started',
-	function ( $room, $entries ) {
+	function ( $room, $entries ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		// Extract post ID from room name (postType/post:42).
 		if ( ! preg_match( '/postType\/\w+:(\d+)/', $room, $matches ) ) {
 			return;
