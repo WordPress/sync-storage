@@ -26,7 +26,7 @@ add_action(
 		update_post_meta( $post_id, '_rtc_collaboration_active', true );
 
 		// Optionally notify via action.
-		do_action( 'rtc_collaboration_room_active', $post_id, $entries );
+		do_action( 'rtc_room_active', $post_id, $entries );
 	},
 	10,
 	2
@@ -47,7 +47,7 @@ add_action(
 		// Clear RTC flag.
 		delete_post_meta( $post_id, '_rtc_collaboration_active' );
 
-		do_action( 'rtc_collaboration_room_inactive', $post_id, $entries );
+		do_action( 'rtc_room_inactive', $post_id, $entries );
 	},
 	10,
 	2

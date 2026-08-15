@@ -65,22 +65,22 @@ RTC_Presence_Storage (this plugin)
 
 ## Actions
 
-### `rtc_collaboration_room_active`
+### `rtc_room_active`
 
 Fires when collaboration starts (2+ editors detected).
 
 ```php
-add_action( 'rtc_collaboration_room_active', function( $post_id, $entries ) {
+add_action( 'rtc_room_active', function( $post_id, $entries ) {
     // Custom logic when RTC activates
 }, 10, 2 );
 ```
 
-### `rtc_collaboration_room_inactive`
+### `rtc_room_inactive`
 
 Fires when collaboration ends (back to single editor).
 
 ```php
-add_action( 'rtc_collaboration_room_inactive', function( $post_id, $entries ) {
+add_action( 'rtc_room_inactive', function( $post_id, $entries ) {
     // Custom logic when RTC deactivates
 }, 10, 2 );
 ```
