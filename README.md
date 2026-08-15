@@ -31,7 +31,6 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 
 ## What This Plugin Does
 
-**Provides:**
 - `wp_collaboration` table for CRDT update storage
 - Integration with Presence API for awareness (cursors, user metadata)
 - Implementation of `Gutenberg_Sync_Storage` interface
@@ -40,7 +39,6 @@ Gutenberg's RTC (Real-Time Collaboration) feature currently stores sync data in 
 
 ## What It Doesn't Do
 
-**Out of Scope:**
 - Gutenberg's HTTP polling provider (remains in Gutenberg)
 - REST endpoints (Gutenberg keeps `/wp/v2/sync/updates`)
 - Editor UI features (cursors, avatars handled by Gutenberg)
@@ -147,9 +145,9 @@ CREATE TABLE wp_collaboration (
 
 ## Cleanup
 
-- **Compaction:** Gutenberg handles (client-nominated compaction)
-- **Safety net:** Daily cron deletes updates >7 days old
-- **Migration:** Automatic migration from `wp_sync_storage` post meta on activation
+- **Compaction:** Gutenberg handles client-nominated compaction
+- **Cron:** Daily job deletes updates older than 7 days
+- **Migration:** Migrates `wp_sync_storage` post meta on activation
 
 ## Developer Hooks
 
@@ -191,20 +189,17 @@ add_action( 'rtc_collaboration_room_inactive', function( $post_id, $entries ) {
 ```
 </details>
 
-## Multisite Support
+## Multisite
 
-✅ **Fully supported** - Tables are created per-site, not globally.
-
-On network activation, automatically creates `wp_collaboration` table on all sites.
+Tables are created per-site, not globally. On network activation, creates `wp_collaboration` table on all sites.
 
 ## Security
 
-**Built-in protections:**
-- ✅ Capability checks via `current_user_can( 'edit_post', $post_id )`
-- ✅ Room format validation (SQL injection prevention via regex)
-- ✅ Prepared statements for all database queries
-- ✅ Defensive checks for Presence API availability
-- ✅ No data exposed without proper authentication
+- Capability checks via `current_user_can( 'edit_post', $post_id )`
+- Room format validation (SQL injection prevention via regex)
+- Prepared statements for all database queries
+- Defensive checks for Presence API availability
+- No data exposed without proper authentication
 
 ---
 
@@ -264,9 +259,3 @@ Sponsored by the [WordPress Core team](https://make.wordpress.org/core/). Update
 | [Gutenberg #80387](https://github.com/WordPress/gutenberg/issues/80387) | RTC provider gating discussion |
 | [Trac #64696](https://core.trac.wordpress.org/ticket/64696) | RTC cache invalidation issue |
 | [wordpress-develop #11609](https://github.com/WordPress/wordpress-develop/pull/11609) | Prior exploration of core integration |
-
----
-
-<p align="center">
-Made with ❤️ for WordPress
-</p>
