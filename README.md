@@ -1,7 +1,7 @@
 # Realtime Collaboration
 
 [![CI](https://github.com/josephfusco/realtime-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/josephfusco/realtime-collaboration/actions/workflows/ci.yml)
-[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint.json)
+[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint-test.json)
 
 > **Status:** Experimental feature plugin
 
@@ -18,11 +18,7 @@ Dedicated storage backend for Gutenberg's RTC feature using:
 > [!WARNING]
 > **Blocker:** The `gutenberg_sync_storage` filter doesn't exist yet in Gutenberg. Draft PR [#81697](https://github.com/WordPress/gutenberg/pull/81697) adds this filter.
 
-## Test it now
-
-[![Open Test Blueprint](https://img.shields.io/badge/Test%20Demo-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/josephfusco/realtime-collaboration/main/blueprint-test.json)
-
-Loads with Gutenberg (from draft PR) + presence-api + realtime-collaboration. Opens Hello World post with seeded collaborators showing what the collaboration toolbar looks like. To test live editing, duplicate the Playground URL in multiple browser tabs.
+Playground demo loads with Gutenberg (from draft PR) + presence-api + realtime-collaboration. Opens Hello World post with seeded collaborators showing the collaboration toolbar. To test live editing, duplicate the Playground URL in multiple browser tabs.
 
 ## Run locally
 
