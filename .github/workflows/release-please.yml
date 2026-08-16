@@ -1,0 +1,73 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      pr: ${{ steps.release.outputs.pr }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
+        id: release
+
+  sync-versions:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.pr }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
+      - run: bash scripts/sync-versions.sh
+      - name: Commit synced version back to the release PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add realtime-collaboration.php
+            git commit -m "chore: sync plugin header version"
+            gh auth setup-git
+            git push
+          fi
+
+  build-release-asset:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - run: composer install --no-dev --no-interaction --optimize-autoloader
+      - name: Build plugin zip
+        run: |
+          mkdir -p build/realtime-collaboration
+          rsync -a --exclude-from='.distignore' ./ build/realtime-collaboration/
+          cd build && zip -r realtime-collaboration.zip realtime-collaboration/
+      - run: gh release upload --clobber "${{ needs.release-please.outputs.tag_name }}" build/realtime-collaboration.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

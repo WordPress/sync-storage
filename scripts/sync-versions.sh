@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#
+# Reads the canonical version from .release-please-manifest.json and syncs it
+# to the plugin header Version field.
+#
+# Called from .github/workflows/release-please.yml after release-please opens
+# (or updates) its release PR. Also runnable locally:
+#
+#   bash scripts/sync-versions.sh
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+command -v jq >/dev/null 2>&1 || { echo "jq is required to run scripts/sync-versions.sh" >&2; exit 1; }
+VERSION=$(jq -r '."."' .release-please-manifest.json)
+
+if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
+	echo "Could not read version from .release-please-manifest.json" >&2
+	exit 1
+fi
+
+grep -q '^ \* Version: ' realtime-collaboration.php \
+	|| { echo "Plugin header 'Version:' line not found in realtime-collaboration.php" >&2; exit 1; }
+
+sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" realtime-collaboration.php
+
+grep -qFx " * Version: ${VERSION}" realtime-collaboration.php \
+	|| { echo "Failed to update plugin header version in realtime-collaboration.php" >&2; exit 1; }
+
+rm -f realtime-collaboration.php.bak
+
+echo "Synced plugin header version to ${VERSION}"
