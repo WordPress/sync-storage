@@ -25,6 +25,11 @@ require_once "{$_tests_dir}/includes/functions.php";
  * Manually load the plugin being tested and its dependencies.
  */
 function _manually_load_plugin() {
+	// Load Gutenberg trunk (required dependency)
+	if ( file_exists( dirname( __DIR__ ) . '/gutenberg-trunk/gutenberg.php' ) ) {
+		require dirname( __DIR__ ) . '/gutenberg-trunk/gutenberg.php';
+	}
+
 	// Load Presence API dependency (stub if not available)
 	if ( file_exists( dirname( __DIR__, 2 ) . '/presence-api/presence-api.php' ) ) {
 		require dirname( __DIR__, 2 ) . '/presence-api/presence-api.php';

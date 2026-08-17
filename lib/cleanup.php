@@ -34,11 +34,9 @@ function rtc_cleanup_old_updates() {
 	);
 
 	if ( $deleted > 0 ) {
-		error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			sprintf(
-				'RTC Collaboration: Cleaned up %d stale updates older than 7 days',
-				$deleted
-			)
+		RTC_Logger::event(
+			'Cleanup complete',
+			array( 'deleted_count' => $deleted )
 		);
 	}
 }

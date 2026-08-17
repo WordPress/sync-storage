@@ -14,6 +14,12 @@ class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
 	public function set_up() {
 		parent::set_up();
 		wp_clear_scheduled_hook( self::HOOK );
+
+		// Ensure $wpdb->collaboration is registered
+		global $wpdb;
+		if ( ! isset( $wpdb->collaboration ) ) {
+			$wpdb->collaboration = $wpdb->prefix . 'collaboration';
+		}
 	}
 
 	public function tear_down() {
@@ -43,7 +49,6 @@ class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
 				data longtext NOT NULL,
 				timestamp bigint(20) unsigned NOT NULL,
 				PRIMARY KEY (id),
-				UNIQUE KEY room_type (room(191), type),
 				KEY room_id (room(50), id),
 				KEY room_timestamp (room(50), timestamp)
 			)"

@@ -24,8 +24,7 @@ function rtc_collaboration_install() {
 	$charset_collate = $wpdb->get_charset_collate();
 
 	// Create collaboration table (per-site, not global).
-	// Stores both CRDT updates (type=NULL, many per room) and awareness (type='awareness', one per room).
-	// MySQL unique constraint allows multiple NULL values but only one 'awareness' per room.
+	// Stores CRDT updates only (awareness lives in wp_presence via Presence API).
 	dbDelta(
 		"CREATE TABLE {$wpdb->collaboration} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -34,7 +33,6 @@ function rtc_collaboration_install() {
 			data longtext NOT NULL,
 			timestamp bigint(20) unsigned NOT NULL,
 			PRIMARY KEY (id),
-			UNIQUE KEY room_type (room(191), type),
 			KEY room_id (room(50), id),
 			KEY room_timestamp (room(50), timestamp)
 		) $charset_collate;"
@@ -63,27 +61,19 @@ function rtc_collaboration_install() {
 }
 
 /**
- * Multisite network activation.
+ * Multisite: Activate on newly created sites.
  */
 if ( is_multisite() ) {
-	register_activation_hook( WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'realtime-collaboration.php', 'rtc_collaboration_network_activate' );
+	add_action( 'wpmu_new_blog', 'rtc_collaboration_install_new_site', 10, 1 );
 
 	/**
-	 * Activate on all sites in network.
+	 * Install on newly created multisite site.
 	 *
-	 * @param bool $network_wide Whether network-wide activation.
+	 * @param int $blog_id Site ID.
 	 */
-	function rtc_collaboration_network_activate( $network_wide ) {
-		if ( ! $network_wide ) {
-			rtc_collaboration_install();
-			return;
-		}
-
-		$sites = get_sites( array( 'number' => 10000 ) );
-		foreach ( $sites as $site ) {
-			switch_to_blog( $site->blog_id );
-			rtc_collaboration_install();
-			restore_current_blog();
-		}
+	function rtc_collaboration_install_new_site( $blog_id ) {
+		switch_to_blog( $blog_id );
+		rtc_collaboration_install();
+		restore_current_blog();
 	}
 }
