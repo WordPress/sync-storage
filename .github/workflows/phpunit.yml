@@ -42,7 +42,7 @@ jobs:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
       - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/realtime-collaboration' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
       - name: Upload coverage to Codecov
-        if: ${{ matrix.coverage && secrets.CODECOV_TOKEN }}
+        if: ${{ matrix.coverage }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
         if: ${{ matrix.coverage }}
         run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/realtime-collaboration' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
       - name: Upload multisite coverage to Codecov
-        if: ${{ matrix.coverage && secrets.CODECOV_TOKEN }}
+        if: ${{ matrix.coverage }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

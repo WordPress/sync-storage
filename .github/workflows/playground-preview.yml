@@ -57,9 +57,9 @@ jobs:
           set -euo pipefail
           jq -e '
             (.steps | length > 0)
-            and (.steps | all(.step | IN("installPlugin")))
-            and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url")) | length == 1)
-            and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "wordpress.org/plugins")) | length == 1)
+            and (.steps | all(.step | IN("login", "installPlugin", "defineWpConfigConsts", "runPHP")))
+            and (.steps | map(select(.step == "installPlugin" and (.pluginZipFile.resource // "") == "url")) | length == 1)
+            and (.steps | map(select(.step == "installPlugin" and (.pluginZipFile.resource // "") == "wordpress.org/plugins")) | length == 2)
           ' blueprint.json > /dev/null
 
       - name: Stage release assets
