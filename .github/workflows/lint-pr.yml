@@ -1,10 +1,7 @@
 name: Lint Pull Request
 
 on:
-  # pull_request_target is required (instead of pull_request) so that
-  # GITHUB_TOKEN has statuses:write permission even when the PR comes from a fork.
-  # No untrusted code is checked out here, so this is safe.
-  pull_request_target: # zizmor: ignore[dangerous-triggers]
+  pull_request_target:
     types:
       - opened
       - edited
