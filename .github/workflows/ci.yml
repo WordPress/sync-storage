@@ -2,40 +2,42 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
+  gate:
+    runs-on: ubuntu-24.04
+    if: ${{ !startsWith(github.head_ref, 'release-please--') && !startsWith(github.ref, 'refs/heads/release-please--') }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.0'
-      - name: Install dependencies
-        run: composer install
-      - name: PHPCS
-        run: composer phpcs
-      - name: PHPStan
-        run: composer phpstan
+      - run: true
 
-  test:
-    name: Test PHP ${{ matrix.php }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php: ['8.0', '8.1', '8.2', '8.3']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-      - name: Install dependencies
-        run: composer install
-      - name: Run tests
-        run: echo "Tests coming soon"
+  phpcs:
+    needs: gate
+    uses: ./.github/workflows/phpcs.yml
+
+  phpstan:
+    needs: gate
+    uses: ./.github/workflows/phpstan.yml
+
+  phpunit:
+    needs: gate
+    uses: ./.github/workflows/phpunit.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  plugin-check:
+    needs: gate
+    uses: ./.github/workflows/plugin-check.yml
+
+  typos:
+    needs: gate
+    uses: ./.github/workflows/typos.yml

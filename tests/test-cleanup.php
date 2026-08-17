@@ -39,11 +39,12 @@ class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
 			"CREATE TABLE IF NOT EXISTS {$wpdb->collaboration} (
 				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 				room varchar(191) NOT NULL,
-				client_id bigint(20) unsigned NOT NULL,
-				type varchar(20) NOT NULL,
+				type varchar(20) DEFAULT NULL,
 				data longtext NOT NULL,
 				timestamp bigint(20) unsigned NOT NULL,
 				PRIMARY KEY (id),
+				UNIQUE KEY room_type (room(191), type),
+				KEY room_id (room(50), id),
 				KEY room_timestamp (room(50), timestamp)
 			)"
 		);
@@ -54,8 +55,6 @@ class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
 			$wpdb->collaboration,
 			array(
 				'room'      => 'postType/post:1',
-				'client_id' => 123,
-				'type'      => 'update',
 				'data'      => 'test',
 				'timestamp' => $old_timestamp,
 			)
@@ -67,8 +66,6 @@ class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
 			$wpdb->collaboration,
 			array(
 				'room'      => 'postType/post:1',
-				'client_id' => 456,
-				'type'      => 'update',
 				'data'      => 'test',
 				'timestamp' => $recent_timestamp,
 			)

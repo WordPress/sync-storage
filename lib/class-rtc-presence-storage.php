@@ -13,9 +13,23 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Storage implementation that delegates awareness to Presence API
  * and CRDT updates to wp_collaboration table.
  *
- * Implements Gutenberg_Sync_Storage interface (when available).
+ * Implements WP_Sync_Storage interface from Gutenberg.
  */
-class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
+class RTC_Presence_Storage implements WP_Sync_Storage {
+
+	/**
+	 * Cache of cursors by room (last returned update ID).
+	 *
+	 * @var array<string, int>
+	 */
+	private array $room_cursors = array();
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		RTC_Logger::event( 'Storage initialized', array( 'class' => __CLASS__ ) );
+	}
 
 	/**
 	 * Validate user can access room.
@@ -23,7 +37,7 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 	 * @param string $room Room identifier (e.g., postType/post:42).
 	 * @return bool True if user can collaborate in this room.
 	 */
-	private function validate_access( $room ) {
+	private function validate_access( string $room ): bool {
 		// Validate room format: postType/type:id.
 		if ( ! preg_match( '/^postType\/([a-z0-9_-]+):(\d+)$/i', $room, $matches ) ) {
 			return false;
@@ -34,71 +48,86 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 	}
 
 	/**
-	 * Get awareness state from Presence API.
+	 * Get awareness state for a room.
 	 *
-	 * Maps wp_presence entries to Gutenberg awareness format.
+	 * Delegates to Presence API and transforms to Gutenberg format.
 	 *
 	 * @param string $room Room identifier.
-	 * @return array Awareness state keyed by client_id.
+	 * @return array<int, mixed> Awareness state array (Gutenberg sync server format).
 	 */
-	public function get_awareness_state( $room ) {
-		if ( ! $this->validate_access( $room ) ) {
-			return array();
-		}
+	public function get_awareness_state( string $room ): array {
+		RTC_Logger::storage( 'get_awareness_state', $room );
 
 		if ( ! function_exists( 'wp_get_presence' ) ) {
+			RTC_Logger::event( 'Presence API not available' );
 			return array();
 		}
 
 		$entries = wp_get_presence( $room );
+		RTC_Logger::presence( 'wp_get_presence', $room, $entries );
 
-		return array_reduce(
-			$entries,
-			function ( $acc, $entry ) {
-				// Map Presence API entry to awareness state.
-				$acc[ $entry->client_id ] = array(
-					'user'   => array(
-						'id'     => $entry->user_id,
-						'name'   => $entry->data['display_name'] ?? '',
-						'avatar' => $entry->data['avatar_url'] ?? '',
-					),
-					'cursor' => $entry->data['cursor'] ?? null,
+		if ( empty( $entries ) ) {
+			return array();
+		}
+
+		// Transform presence entries to Gutenberg awareness format.
+		// Gutenberg expects: [ {client_id, state, updated_at, wp_user_id}, ... ]
+		$awareness = array_map(
+			function ( $entry ) {
+				return array(
+					'client_id'  => $entry->client_id,
+					'state'      => $entry->data,
+					'updated_at' => $entry->last_seen,
+					'wp_user_id' => $entry->user_id,
 				);
-				return $acc;
 			},
-			array()
+			$entries
 		);
+
+		RTC_Logger::storage( 'get_awareness_state:result', $room, $awareness );
+		return $awareness;
 	}
 
 	/**
-	 * Set awareness state via Presence API.
+	 * Set awareness state for a room.
 	 *
-	 * Delegates to wp_set_presence() for zero cache side effects.
+	 * Delegates to Presence API, transforming from Gutenberg format.
 	 *
-	 * @param string $room Room identifier.
-	 * @param string $client_id Client identifier.
-	 * @param array  $state Awareness state.
+	 * @param string            $room      Room identifier.
+	 * @param array<int, mixed> $awareness Awareness state array (Gutenberg sync server format).
 	 * @return bool True on success.
 	 */
-	public function set_awareness_state( $room, $client_id, $state ) {
+	public function set_awareness_state( string $room, array $awareness ): bool {
+		RTC_Logger::storage( 'set_awareness_state', $room, $awareness );
+
 		if ( ! function_exists( 'wp_set_presence' ) ) {
+			RTC_Logger::event( 'Presence API not available' );
 			return false;
 		}
 
-		// Extract user info from awareness state.
-		$user_id = $state['user']['id'] ?? get_current_user_id();
+		// Each entry in awareness: {client_id, state, updated_at, wp_user_id}
+		// Transform to presence-api format and store each client.
+		foreach ( $awareness as $entry ) {
+			if ( ! isset( $entry['client_id'], $entry['wp_user_id'] ) ) {
+				continue;
+			}
 
-		wp_set_presence(
-			$room,
-			$client_id,
-			array(
-				'display_name' => $state['user']['name'] ?? '',
-				'avatar_url'   => $state['user']['avatar'] ?? '',
-				'cursor'       => $state['cursor'] ?? null,
-				'rtc_active'   => true,
-			),
-			$user_id
-		);
+			wp_set_presence(
+				$room,
+				$entry['client_id'],
+				$entry['state'] ?? array(),
+				$entry['wp_user_id']
+			);
+
+			RTC_Logger::presence(
+				'wp_set_presence',
+				$room,
+				array(
+					'client_id' => $entry['client_id'],
+					'user_id'   => $entry['wp_user_id'],
+				)
+			);
+		}
 
 		return true;
 	}
@@ -106,12 +135,15 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 	/**
 	 * Add CRDT update to wp_collaboration table.
 	 *
-	 * @param string $room Room identifier.
-	 * @param array  $update Update data with client_id, type, data, timestamp.
+	 * @param string $room   Room identifier.
+	 * @param mixed  $update Update data (opaque, serializable).
 	 * @return bool True on success.
 	 */
-	public function add_update( $room, $update ) {
+	public function add_update( string $room, $update ): bool {
+		RTC_Logger::storage( 'add_update', $room );
+
 		if ( ! $this->validate_access( $room ) ) {
+			RTC_Logger::event( 'Access denied', array( 'room' => $room ) );
 			return false;
 		}
 
@@ -122,26 +154,74 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 			$wpdb->collaboration,
 			array(
 				'room'      => $room,
-				'client_id' => $update['client_id'],
-				'type'      => $update['type'],
-				'data'      => $update['data'],
-				'timestamp' => $update['timestamp'],
+				'data'      => wp_json_encode( $update ),
+				'timestamp' => time(),
 			),
-			array( '%s', '%d', '%s', '%s', '%d' )
+			array( '%s', '%s', '%d' )
 		);
 
-		return false !== $result;
+		$success = false !== $result;
+		RTC_Logger::storage(
+			'add_update:result',
+			$room,
+			array(
+				'success'   => $success,
+				'insert_id' => $success ? $wpdb->insert_id : null,
+			)
+		);
+
+		return $success;
 	}
 
 	/**
-	 * Get CRDT updates from wp_collaboration table.
+	 * Get current cursor for a room.
+	 *
+	 * Returns the last update ID returned for this room during current request.
 	 *
 	 * @param string $room Room identifier.
-	 * @param int    $after_cursor Timestamp cursor (only return updates after this).
-	 * @return array Array of updates.
+	 * @return int Current cursor.
 	 */
-	public function get_updates( $room, $after_cursor = 0 ) {
+	public function get_cursor( string $room ): int {
+		return $this->room_cursors[ $room ] ?? 0;
+	}
+
+	/**
+	 * Get total number of updates for a room.
+	 *
+	 * @param string $room Room identifier.
+	 * @return int Update count.
+	 */
+	public function get_update_count( string $room ): int {
 		if ( ! $this->validate_access( $room ) ) {
+			return 0;
+		}
+
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->collaboration}
+				 WHERE room = %s AND type IS NULL",
+				$room
+			)
+		);
+
+		return (int) $count;
+	}
+
+	/**
+	 * Get updates after a given cursor.
+	 *
+	 * @param string $room   Room identifier.
+	 * @param int    $cursor Return updates after this cursor (update ID).
+	 * @return array<int, mixed> Updates array.
+	 */
+	public function get_updates_after_cursor( string $room, int $cursor ): array {
+		RTC_Logger::storage( 'get_updates_after_cursor', $room, array( 'cursor' => $cursor ) );
+
+		if ( ! $this->validate_access( $room ) ) {
+			RTC_Logger::event( 'Access denied', array( 'room' => $room ) );
 			return array();
 		}
 
@@ -150,42 +230,70 @@ class RTC_Presence_Storage implements Gutenberg_Sync_Storage {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT client_id, type, data, timestamp
-				 FROM {$wpdb->collaboration}
-				 WHERE room = %s AND timestamp > %d
-				 ORDER BY timestamp ASC",
+				"SELECT id, data FROM {$wpdb->collaboration}
+				 WHERE room = %s AND type IS NULL AND id > %d
+				 ORDER BY id ASC",
 				$room,
-				$after_cursor
+				$cursor
 			),
 			ARRAY_A
 		);
 
-		return $results ? $results : array();
+		if ( ! $results ) {
+			RTC_Logger::storage( 'get_updates_after_cursor:result', $room, array( 'count' => 0 ) );
+			return array();
+		}
+
+		// Track the last cursor for this room.
+		$last_id = end( $results )['id'];
+		$this->room_cursors[ $room ] = (int) $last_id;
+
+		// Decode and return updates.
+		$updates = array_values(
+			array_map(
+				function ( $row ) {
+					return json_decode( $row['data'], true );
+				},
+				$results
+			)
+		);
+
+		RTC_Logger::storage(
+			'get_updates_after_cursor:result',
+			$room,
+			array(
+				'count'      => count( $updates ),
+				'new_cursor' => $last_id,
+			)
+		);
+
+		return $updates;
 	}
 
 	/**
-	 * Compact updates (clear old, store compaction).
+	 * Remove updates before a given cursor.
 	 *
-	 * @param string $room Room identifier.
-	 * @param array  $compaction_update Compaction update data.
+	 * @param string $room   Room identifier.
+	 * @param int    $cursor Remove updates with ID < this cursor.
 	 * @return bool True on success.
 	 */
-	public function compact_updates( $room, $compaction_update ) {
+	public function remove_updates_before_cursor( string $room, int $cursor ): bool {
 		if ( ! $this->validate_access( $room ) ) {
 			return false;
 		}
 
 		global $wpdb;
 
-		// Delete all updates for this room.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$wpdb->delete(
-			$wpdb->collaboration,
-			array( 'room' => $room ),
-			array( '%s' )
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->collaboration}
+				 WHERE room = %s AND type IS NULL AND id < %d",
+				$room,
+				$cursor
+			)
 		);
 
-		// Store the compaction as single update.
-		return $this->add_update( $room, $compaction_update );
+		return false !== $result;
 	}
 }

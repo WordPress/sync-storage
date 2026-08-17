@@ -1,9 +1,9 @@
 {
 	"core": null,
 	"plugins": [
-		".",
 		"https://downloads.wordpress.org/plugin/presence-api.zip",
-		"https://downloads.wordpress.org/plugin/gutenberg.zip"
+		"./gutenberg-trunk",
+		"."
 	],
 	"config": {
 		"WP_DEBUG": true,

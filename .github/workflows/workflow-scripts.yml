@@ -1,0 +1,42 @@
+name: Workflow Scripts Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+  pull_request:
+    paths:
+      - 'scripts/**'
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+  test:
+    name: Test sync-versions.sh
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Test sync-versions.sh runs without errors
+        run: bash scripts/sync-versions.sh
+
+      - name: Verify the script made expected changes
+        run: |
+          VERSION=$(jq -r '."."' .release-please-manifest.json)
+          if ! grep -qFx " * Version: ${VERSION}" realtime-collaboration.php; then
+            echo "::error::sync-versions.sh did not update plugin header correctly"
+            exit 1
+          fi
+          echo "sync-versions.sh correctly synced version to ${VERSION}"

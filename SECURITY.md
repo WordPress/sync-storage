@@ -6,7 +6,7 @@ The Realtime Collaboration plugin is an experimental feature plugin. We take sec
 
 Do **not** open a public GitHub issue for security reports.
 
-Use [GitHub Security Advisories](https://github.com/josephfusco/realtime-collaboration/security/advisories/new) to report privately. We aim to acknowledge within 72 hours and to issue a patched release within 14 days of acknowledgement, faster if the issue is actively exploited.
+Use [GitHub Security Advisories](https://github.com/WordPress/realtime-collaboration/security/advisories/new) to report privately. We aim to acknowledge within 72 hours and to issue a patched release within 14 days of acknowledgement, faster if the issue is actively exploited.
 
 ## Scope
 

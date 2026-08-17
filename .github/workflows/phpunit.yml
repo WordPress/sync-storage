@@ -1,0 +1,63 @@
+name: PHPUnit
+
+on:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  phpunit:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '7.4', '8.3' ]
+        include:
+          - php: '8.3'
+            coverage: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer
+      - run: npm ci
+      - name: Authenticate composer to GitHub
+        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
+      - name: Install Composer dependencies
+        run: composer install --no-interaction
+      - run: npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
+        env:
+          WP_ENV_PHP_VERSION: ${{ matrix.php }}
+      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/realtime-collaboration' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
+      - name: Upload coverage to Codecov
+        if: ${{ matrix.coverage && secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          flags: phpunit
+      # Multisite testing - RTC plugin needs to verify multisite table creation
+      # and cleanup behavior. The network provisioning lives in lib/install.php
+      # and would show as uncovered without this run.
+      - name: Run the suite as multisite
+        if: ${{ matrix.coverage }}
+        run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/realtime-collaboration' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
+      - name: Upload multisite coverage to Codecov
+        if: ${{ matrix.coverage && secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage-multisite.xml
+          flags: multisite

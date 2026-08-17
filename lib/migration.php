@@ -49,12 +49,10 @@ function rtc_migrate_post_meta_storage() {
 				$wpdb->collaboration,
 				array(
 					'room'      => $update['room'] ?? '',
-					'client_id' => $update['client_id'] ?? 0,
-					'type'      => $update['type'] ?? 'update',
-					'data'      => $update['data'] ?? '',
-					'timestamp' => $update['timestamp'] ?? 0,
+					'data'      => wp_json_encode( $update ),
+					'timestamp' => $update['timestamp'] ?? time(),
 				),
-				array( '%s', '%d', '%s', '%s', '%d' )
+				array( '%s', '%s', '%d' )
 			);
 			++$migrated;
 		}

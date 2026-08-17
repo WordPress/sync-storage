@@ -3,7 +3,7 @@
 	"license": "GPL-2.0-or-later",
 	"description": "Storage layer for real-time collaborative editing in WordPress.",
 	"require": {
-		"php": ">=8.0"
+		"php": ">=7.4"
 	},
 	"require-dev": {
 		"squizlabs/php_codesniffer": "3.13.6",

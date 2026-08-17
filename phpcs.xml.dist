@@ -24,7 +24,7 @@
 	</rule>
 
 	<!-- Check for PHP cross-version compatibility. -->
-	<config name="testVersion" value="8.0-"/>
+	<config name="testVersion" value="7.4-"/>
 	<rule ref="PHPCompatibilityWP"/>
 
 	<!-- Verify text domain. -->

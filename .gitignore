@@ -4,3 +4,5 @@ artifacts/
 .cache/
 .phpunit.result.cache
 coverage.xml
+.wp-env-gutenberg-trunk
+gutenberg-trunk/
