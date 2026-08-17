@@ -37,7 +37,8 @@ jobs:
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
         run: composer install --no-interaction
-      - run: npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
+      - name: Build Gutenberg trunk and start wp-env
+        run: bash build-gutenberg.sh && npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
       - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/realtime-collaboration' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}

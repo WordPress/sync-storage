@@ -71,7 +71,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 		}
 
 		// Transform presence entries to Gutenberg awareness format.
-		// Gutenberg expects: [ {client_id, state, updated_at, wp_user_id}, ... ]
+		// Gutenberg expects: [ {client_id, state, updated_at, wp_user_id}, ... ].
 		$awareness = array_map(
 			function ( $entry ) {
 				return array(
@@ -245,7 +245,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 		}
 
 		// Track the last cursor for this room.
-		$last_id = end( $results )['id'];
+		$last_id                     = end( $results )['id'];
 		$this->room_cursors[ $room ] = (int) $last_id;
 
 		// Decode and return updates.

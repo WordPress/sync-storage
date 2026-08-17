@@ -64,11 +64,11 @@ class RTC_Logger {
 	/**
 	 * Log Presence API call.
 	 *
-	 * @param string $function Function name.
-	 * @param string $room     Room identifier.
-	 * @param mixed  $result   Result data.
+	 * @param string $method Function name.
+	 * @param string $room   Room identifier.
+	 * @param mixed  $result Result data.
 	 */
-	public static function presence( $function, $room, $result = null ) {
+	public static function presence( $method, $room, $result = null ) {
 		$context = array( 'room' => $room );
 
 		if ( is_array( $result ) ) {
@@ -77,7 +77,7 @@ class RTC_Logger {
 			$context['result'] = $result;
 		}
 
-		self::log( "Presence::{$function}()", $context );
+		self::log( "Presence::{$method}()", $context );
 	}
 
 	/**
