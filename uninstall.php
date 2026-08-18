@@ -18,6 +18,7 @@ $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}collaboration" );
 // Remove options.
 delete_option( 'sync_storage_db_version' );
 delete_option( 'sync_storage_migrated_from_post_meta' );
+delete_option( 'sync_storage_filter_check' );
 
 // Clear scheduled cron.
 wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
@@ -34,6 +35,7 @@ if ( is_multisite() ) {
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}collaboration" );
 		delete_option( 'sync_storage_db_version' );
 		delete_option( 'sync_storage_migrated_from_post_meta' );
+		delete_option( 'sync_storage_filter_check' );
 		wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
 
 		restore_current_blog();

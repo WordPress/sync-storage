@@ -8,11 +8,6 @@ const baseURL = process.env.WP_BASE_URL || 'http://localhost:8888';
 
 export default defineConfig({
 	testDir: './tests/e2e',
-	// Default (30s) is too tight for the multi-user tests: creating a
-	// collaborator triggers a fresh login + REST discovery handshake, which
-	// on a CI runner right after building Gutenberg trunk and starting
-	// wp-env can outrun 30s even though it's a couple seconds once warm.
-	timeout: 60_000,
 	fullyParallel: false, // Collaborative tests need sequential execution
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,

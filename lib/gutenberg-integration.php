@@ -10,6 +10,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Tracks, within the current process, whether Gutenberg has actually called
+ * __unstable_wp_sync_storage.
+ *
+ * A plain file-scope variable isn't reliable here: WP-CLI's bootstrap loads
+ * plugin files in a different scope than a normal request does, so a
+ * top-level $var = ...; in this file isn't guaranteed to be the same
+ * variable `global $var` reaches elsewhere. A static local variable inside
+ * a dedicated function has one unambiguous scope no matter how this file
+ * was loaded.
+ *
+ * @param bool $set Pass true to record that the filter fired.
+ * @return bool Whether the filter has fired yet this process.
+ */
+function sync_storage_filter_fired( $set = false ) {
+	static $fired = false;
+
+	if ( $set ) {
+		$fired = true;
+	}
+
+	return $fired;
+}
+
+/**
  * Replace Gutenberg's post meta storage with dedicated table storage.
  *
  * Uses wp_collaboration table for both CRDT updates and awareness state,
@@ -20,6 +44,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_filter(
 	'__unstable_wp_sync_storage',
 	function ( $default_storage ) {
+		sync_storage_filter_fired( true );
+
 		Sync_Storage_Logger::event(
 			'Filter hooked: __unstable_wp_sync_storage',
 			array(
@@ -29,6 +55,68 @@ add_filter(
 		);
 
 		return new Sync_Storage_Provider();
+	}
+);
+
+/**
+ * Determines whether this Gutenberg build actually calls
+ * __unstable_wp_sync_storage, caching the result against the installed
+ * Gutenberg version so the check reruns whenever that version changes
+ * rather than on any arbitrary schedule.
+ *
+ * The rest_api_init hook, where Gutenberg would apply the filter, only fires for
+ * requests actually routed to /wp-json/, so an admin page that doesn't
+ * happen to make a REST call during its own load can't be trusted to have
+ * set $sync_storage_filter_fired by the time admin_notices runs. Dispatching
+ * a request directly forces the determination instead of hoping one already
+ * happened elsewhere in the same request.
+ *
+ * @return bool Whether this Gutenberg build supports the filter.
+ */
+function sync_storage_collaboration_filter_supported() {
+	$cached = get_option( 'sync_storage_filter_check' );
+
+	if ( is_array( $cached ) && GUTENBERG_VERSION === ( $cached['gutenberg_version'] ?? null ) ) {
+		return $cached['supported'];
+	}
+
+	rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/' ) );
+
+	$supported = sync_storage_filter_fired();
+
+	update_option(
+		'sync_storage_filter_check',
+		array(
+			'gutenberg_version' => GUTENBERG_VERSION,
+			'supported'         => $supported,
+		),
+		false
+	);
+
+	return $supported;
+}
+
+/**
+ * Warns when this Gutenberg build never calls __unstable_wp_sync_storage.
+ *
+ * The filter isn't in any tagged Gutenberg release yet, only trunk. Without
+ * it, real-time collaboration silently falls back to Gutenberg's default
+ * post meta storage: no error, no fatal, just every write going to the
+ * exact cache-thrashing storage this plugin exists to replace.
+ */
+add_action(
+	'admin_notices',
+	function () {
+		if ( sync_storage_collaboration_filter_supported() ) {
+			return;
+		}
+
+		echo '<div class="notice notice-warning"><p>';
+		echo esc_html__(
+			"Sync Storage: this Gutenberg build doesn't call the __unstable_wp_sync_storage filter, so real-time collaboration is silently using Gutenberg's default post meta storage instead of this plugin's dedicated tables. The filter isn't in any tagged Gutenberg release yet; build Gutenberg from trunk to use the intended storage.",
+			'sync-storage'
+		);
+		echo '</p></div>';
 	}
 );
 
