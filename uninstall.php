@@ -23,6 +23,8 @@ delete_option( 'sync_storage_migrated_from_post_meta' );
 wp_clear_scheduled_hook( 'sync_storage_cleanup_old_updates' );
 
 // On multisite, clean up all sites.
+// Note: Limited to 10,000 sites. For larger networks, manually clean via WP-CLI:
+// wp site list --field=url | xargs -I {} wp --url={} plugin uninstall sync-storage
 if ( is_multisite() ) {
 	$sites = get_sites( array( 'number' => 10000 ) );
 	foreach ( $sites as $site ) {

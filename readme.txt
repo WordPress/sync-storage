@@ -1,9 +1,9 @@
-=== Realtime Collaboration ===
+=== Sync Storage ===
 Contributors: josephfusco
 Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.2
-Requires PHP: 8.0
+Requires PHP: 7.4
 Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -12,7 +12,7 @@ Storage layer for real-time collaborative editing in WordPress.
 
 == Description ==
 
-Realtime Collaboration provides storage infrastructure for Gutenberg's real-time collaborative editing feature, eliminating cache invalidation side effects caused by storing sync data in post meta.
+Sync Storage provides storage infrastructure for Gutenberg's real-time collaborative editing feature, eliminating cache invalidation side effects caused by storing sync data in post meta.
 
 **Features:**
 
@@ -47,7 +47,7 @@ Yes, this plugin provides the storage layer for Gutenberg's real-time collaborat
 
 = Do I need the Presence API plugin? =
 
-Yes, Realtime Collaboration requires the Presence API plugin for awareness infrastructure.
+Yes, Sync Storage requires the Presence API plugin for awareness infrastructure.
 
 = Does this work on multisite? =
 

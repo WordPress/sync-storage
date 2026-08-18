@@ -37,8 +37,8 @@ docker exec $(docker ps -q --filter "name=sync-storage.*wordpress-1") tail -f /v
 ```
 
 Look for:
-- `[RTC] Filter hooked: __unstable_wp_sync_storage` (storage replacement working)
-- `[RTC] Storage initialized` (Sync_Storage_Presence_Storage active)
+- `[Sync] Filter hooked: __unstable_wp_sync_storage` (storage replacement working)
+- `[Sync] Storage initialized` (Sync_Storage_Provider active)
 
 **Stop**: `npm run env:stop`
 
@@ -101,7 +101,6 @@ INSERT INTO wp_collaboration (room, data, timestamp) VALUES (...);
 
 **Indexes**:
 - `PRIMARY KEY (id)` - cursor lookups
-- `UNIQUE KEY room_type (room, type)` - one awareness row per room (if needed)
 - `KEY room_id (room, id)` - polling queries
 - `KEY room_timestamp (room, timestamp)` - cleanup queries
 
@@ -129,12 +128,12 @@ All storage operations log to `wp-content/debug.log` when `WP_DEBUG_LOG` is enab
 
 **Example log output**:
 ```
-[RTC] Plugin loaded {"presence":true,"gutenberg":"21.x"}
-[RTC] Filter hooked: __unstable_wp_sync_storage
-[RTC] Storage initialized
-[RTC] Storage::set_awareness_state() {"room":"postType/post:1","count":1}
-[RTC] Presence::wp_set_presence() {"room":"postType/post:1"}
-[RTC] Storage::add_update() {"room":"postType/post:1"}
+[Sync] Plugin loaded {"presence":true,"gutenberg":"21.x"}
+[Sync] Filter hooked: __unstable_wp_sync_storage
+[Sync] Storage initialized
+[Sync] Storage::set_awareness_state() {"room":"postType/post:1","count":1}
+[Sync] Presence::wp_set_presence() {"room":"postType/post:1"}
+[Sync] Storage::add_update() {"room":"postType/post:1"}
 ```
 
 ### Manual Database Check
@@ -160,10 +159,10 @@ This plugin demonstrates the architecture proposed for WordPress 7.2. Feedback w
 
 ### Key Files
 
-- `lib/class-rtc-presence-storage.php` - WP_Sync_Storage implementation
+- `lib/class-sync-storage-provider.php` - WP_Sync_Storage implementation
 - `lib/gutenberg-integration.php` - Filter hook
 - `lib/install.php` - Table creation
-- `lib/class-rtc-logger.php` - Debug logging
+- `lib/class-sync-storage-logger.php` - Debug logging
 
 ## License
 
