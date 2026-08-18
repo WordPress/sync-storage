@@ -32,6 +32,15 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 	}
 
 	/**
+	 * Current time in milliseconds, matching the Yjs client's timestamp unit.
+	 *
+	 * @return int Current time in milliseconds.
+	 */
+	public static function current_time_ms(): int {
+		return (int) round( microtime( true ) * 1000 );
+	}
+
+	/**
 	 * Validate user can access room.
 	 *
 	 * @param string $room Room identifier (e.g., postType/post:42).
@@ -57,6 +66,11 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 	 */
 	public function get_awareness_state( string $room ): array {
 		Sync_Storage_Logger::storage( 'get_awareness_state', $room );
+
+		if ( ! $this->validate_access( $room ) ) {
+			Sync_Storage_Logger::event( 'Access denied', array( 'room' => $room ) );
+			return array();
+		}
 
 		if ( ! function_exists( 'wp_get_presence' ) ) {
 			Sync_Storage_Logger::event( 'Presence API not available' );
@@ -99,6 +113,11 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 	 */
 	public function set_awareness_state( string $room, array $awareness ): bool {
 		Sync_Storage_Logger::storage( 'set_awareness_state', $room, $awareness );
+
+		if ( ! $this->validate_access( $room ) ) {
+			Sync_Storage_Logger::event( 'Access denied', array( 'room' => $room ) );
+			return false;
+		}
 
 		if ( ! function_exists( 'wp_set_presence' ) ) {
 			Sync_Storage_Logger::event( 'Presence API not available' );
@@ -155,7 +174,7 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 			array(
 				'room'      => $room,
 				'data'      => wp_json_encode( $update ),
-				'timestamp' => time(),
+				'timestamp' => self::current_time_ms(),
 			),
 			array( '%s', '%s', '%d' )
 		);

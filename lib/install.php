@@ -25,6 +25,7 @@ function sync_storage_install() {
 
 	// Create collaboration table (per-site, not global).
 	// Stores CRDT updates only (awareness lives in wp_presence via Presence API).
+	// `timestamp` is milliseconds since epoch (matches Yjs) -- see Sync_Storage_Provider::current_time_ms().
 	dbDelta(
 		"CREATE TABLE {$wpdb->collaboration} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

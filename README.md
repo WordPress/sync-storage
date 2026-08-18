@@ -95,9 +95,9 @@ INSERT INTO wp_collaboration (room, data, timestamp) VALUES (...);
 |-------------|----------------|----------------------------------|
 | id          | BIGINT UNSIGNED| Auto-increment cursor for polling|
 | room        | VARCHAR(191)   | Room identifier (e.g., postType/post:42)|
-| type        | VARCHAR(20)    | NULL for updates, 'awareness' for fallback|
+| type        | VARCHAR(20)    | Reserved for future update classification; unused today (always NULL) |
 | data        | LONGTEXT       | JSON-encoded opaque payload      |
-| timestamp   | BIGINT UNSIGNED| For 7-day cleanup cron           |
+| timestamp   | BIGINT UNSIGNED| Milliseconds since epoch, matches Yjs. Used by the 7-day cleanup cron |
 
 **Indexes**:
 - `PRIMARY KEY (id)` - cursor lookups

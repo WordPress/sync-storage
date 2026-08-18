@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function sync_storage_migrate_post_meta() {
 	// Skip if already migrated.
-	if ( get_option( 'rtc_migrated_from_post_meta' ) ) {
+	if ( get_option( 'sync_storage_migrated_from_post_meta' ) ) {
 		return;
 	}
 
@@ -28,7 +28,7 @@ function sync_storage_migrate_post_meta() {
 	);
 
 	if ( empty( $old_posts ) ) {
-		update_option( 'rtc_migrated_from_post_meta', true );
+		update_option( 'sync_storage_migrated_from_post_meta', true );
 		return;
 	}
 
@@ -50,7 +50,7 @@ function sync_storage_migrate_post_meta() {
 				array(
 					'room'      => $update['room'] ?? '',
 					'data'      => wp_json_encode( $update ),
-					'timestamp' => $update['timestamp'] ?? time(),
+					'timestamp' => $update['timestamp'] ?? Sync_Storage_Provider::current_time_ms(),
 				),
 				array( '%s', '%s', '%d' )
 			);
@@ -58,7 +58,7 @@ function sync_storage_migrate_post_meta() {
 		}
 	}
 
-	update_option( 'rtc_migrated_from_post_meta', true );
+	update_option( 'sync_storage_migrated_from_post_meta', true );
 
 	Sync_Storage_Logger::event(
 		'Migration complete',

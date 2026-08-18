@@ -182,4 +182,61 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 		$retrieved = $this->provider->get_awareness_state( $this->room );
 		$this->assertIsArray( $retrieved );
 	}
+
+	/**
+	 * Test awareness state is gated by the same permission check as updates.
+	 */
+	public function test_awareness_state_requires_permission() {
+		wp_set_current_user( 0 );
+
+		$awareness = array(
+			array(
+				'client_id'  => 'client-123',
+				'state'      => array( 'cursor' => 10 ),
+				'wp_user_id' => 0,
+			),
+		);
+
+		$this->assertFalse( $this->provider->set_awareness_state( $this->room, $awareness ) );
+		$this->assertSame( array(), $this->provider->get_awareness_state( $this->room ) );
+	}
+
+	/**
+	 * Test that stored timestamps are milliseconds, not seconds.
+	 *
+	 * Cleanup's cutoff is computed in milliseconds (matching Yjs). Storing
+	 * seconds here would make every row look older than the cutoff and get
+	 * deleted on the very next cleanup run, regardless of actual age.
+	 */
+	public function test_add_update_stores_millisecond_timestamp() {
+		$this->provider->add_update( $this->room, array( 'data' => 'test' ) );
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$timestamp = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT timestamp FROM {$wpdb->collaboration} WHERE room = %s ORDER BY id DESC LIMIT 1",
+				$this->room
+			)
+		);
+
+		// A millisecond epoch timestamp for any date past 2001 exceeds 1e12;
+		// a seconds timestamp for the foreseeable future does not.
+		$this->assertGreaterThan( 1000000000000, $timestamp );
+	}
+
+	/**
+	 * Test that a fresh update survives the cleanup cron immediately after being written.
+	 *
+	 * Regression test for a unit mismatch: add_update() previously stored
+	 * seconds while the cleanup cutoff is computed in milliseconds, so every
+	 * row looked older than 7 days and was deleted on the next cron run.
+	 */
+	public function test_fresh_update_survives_cleanup() {
+		$this->provider->add_update( $this->room, array( 'data' => 'fresh' ) );
+
+		sync_storage_cleanup_old_updates();
+
+		$this->assertSame( 1, $this->provider->get_update_count( $this->room ) );
+	}
 }
