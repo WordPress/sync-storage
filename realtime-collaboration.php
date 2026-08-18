@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Realtime Collaboration
  * Description: Storage layer for real-time collaborative editing in WordPress.
- * Version: 0.1.0
+ * Version: 0.1.1
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: WordPress Core Team
