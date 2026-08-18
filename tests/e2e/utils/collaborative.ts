@@ -2,10 +2,9 @@
  * Collaborative editing test utilities.
  *
  * Utilities for testing multi-user collaborative scenarios in WordPress.
- * This could evolve into @wordpress/e2e-test-utils-collaborative package.
  */
 import type { Browser, BrowserContext, Page } from '@playwright/test';
-import { Admin, RequestUtils } from '@wordpress/e2e-test-utils-playwright';
+import { Admin, Editor, PageUtils, RequestUtils } from '@wordpress/e2e-test-utils-playwright';
 
 export interface CollaborativeSession {
 	context: BrowserContext;
@@ -14,10 +13,81 @@ export interface CollaborativeSession {
 	requestUtils: RequestUtils;
 	userId: number;
 	userName: string;
+	clientId: number;
+}
+
+export interface SyncPollResult {
+	end_cursor: number;
+	room: string;
+	should_compact: boolean;
+	total_updates: number;
+	updates: Array<{ type: string; data: string }>;
+	awareness: Record<string, unknown>;
+}
+
+export interface PresenceEntry {
+	client_id: string;
+	user_id: number;
+	display_name: string;
+	data: Record<string, unknown>;
+	date_gmt: string;
+}
+
+const ADMIN_USERNAME = process.env.WP_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.WP_PASSWORD || 'password';
+const BASE_URL = process.env.WP_BASE_URL || 'http://localhost:8888';
+const COLLABORATOR_PASSWORD = 'sync-storage-e2e-collaborator!1';
+
+/**
+ * Create (or reuse, from a previous run) a distinct editor user for a collaborative session.
+ *
+ * @param admin    Admin-authenticated RequestUtils, used to provision the collaborator.
+ * @param username Username for the collaborator.
+ */
+async function ensureCollaborator(
+	admin: RequestUtils,
+	username: string
+): Promise<{ id: number }> {
+	try {
+		return await admin.createUser({
+			username,
+			email: `${username}@example.test`,
+			password: COLLABORATOR_PASSWORD,
+			roles: ['editor'],
+		});
+	} catch (error) {
+		if ((error as { code?: string })?.code !== 'existing_user_login') {
+			throw error;
+		}
+	}
+
+	const matches: Array<{ id: number; slug: string }> = await admin.rest({
+		path: `/wp/v2/users?search=${encodeURIComponent(username)}&context=edit`,
+	});
+	const existing = matches.find((user) => user.slug === username);
+	if (!existing) {
+		throw new Error(
+			`Collaborator "${username}" already exists but could not be found via search.`
+		);
+	}
+
+	// Reset the password so this run's login credentials are known, regardless
+	// of what a previous run left behind.
+	await admin.rest({
+		method: 'POST',
+		path: `/wp/v2/users/${existing.id}`,
+		data: { password: COLLABORATOR_PASSWORD },
+	});
+
+	return { id: existing.id };
 }
 
 /**
  * Create multiple collaborative sessions (different users editing simultaneously).
+ *
+ * Each session is a separate browser context authenticated as its own
+ * WordPress editor user, so cookies, capabilities, and presence all behave
+ * like real concurrent collaborators instead of one user in multiple tabs.
  *
  * @param browser Playwright browser instance
  * @param count Number of concurrent users to simulate
@@ -27,30 +97,41 @@ export async function createCollaborativeSessions(
 	browser: Browser,
 	count: number = 2
 ): Promise<CollaborativeSession[]> {
+	const admin = await RequestUtils.setup({
+		user: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
+		baseURL: BASE_URL,
+	});
+
 	const sessions: CollaborativeSession[] = [];
 
 	for (let i = 0; i < count; i++) {
-		const context = await browser.newContext({
-			storageState: undefined, // Fresh session for each user
-		});
-		const page = await context.newPage();
-		const requestUtils = await RequestUtils.setup({
-			baseURL: process.env.WP_BASE_URL || 'http://localhost:8888',
-			storageState: undefined,
-		});
-		const admin = new Admin({ page, request: requestUtils });
+		const userName = `sync-storage-editor-${i + 1}`;
+		const { id: userId } = await ensureCollaborator(admin, userName);
 
-		// Each session gets a unique user
-		const userName = `editor${i + 1}`;
-		const userId = i + 1;
+		const context = await browser.newContext();
+		const requestUtils = new RequestUtils(context.request, {
+			user: { username: userName, password: COLLABORATOR_PASSWORD },
+			baseURL: BASE_URL,
+		});
+		// Logging in via context.request shares this context's cookie jar, so
+		// the browser `page` below is authenticated as this collaborator too.
+		await requestUtils.login();
+
+		const page = await context.newPage();
+		const sessionAdmin = new Admin({
+			page,
+			pageUtils: new PageUtils({ page }),
+			editor: new Editor({ page }),
+		});
 
 		sessions.push({
 			context,
 			page,
-			admin,
+			admin: sessionAdmin,
 			requestUtils,
 			userId,
 			userName,
+			clientId: 1000 + i,
 		});
 	}
 
@@ -72,6 +153,70 @@ export async function openPostInSessions(
 			await admin.visitAdminPage(`post.php?post=${postId}&action=edit`);
 		})
 	);
+}
+
+/**
+ * Room identifier for a post, matching Sync_Storage_Provider's expected format.
+ *
+ * @param postId Post ID.
+ */
+export function postRoom(postId: number): string {
+	return `postType/post:${postId}`;
+}
+
+/**
+ * Poll the real Gutenberg sync REST endpoint (`/wp-sync/v1/updates`) as a given
+ * session. This drives updates and awareness through the actual REST -> filter
+ * -> Sync_Storage_Provider path, not a mock.
+ *
+ * @param session Collaborative session making the request.
+ * @param room    Room identifier.
+ * @param options Polling options (cursor, awareness payload, updates to send).
+ */
+export async function pollSync(
+	session: CollaborativeSession,
+	room: string,
+	options: {
+		after?: number;
+		awareness?: Record<string, unknown> | null;
+		updates?: Array<{ type: string; data: string }>;
+		clientId?: number;
+	} = {}
+): Promise<SyncPollResult> {
+	const response = await session.requestUtils.rest({
+		method: 'POST',
+		path: '/wp-sync/v1/updates',
+		data: {
+			rooms: [
+				{
+					room,
+					client_id: options.clientId ?? session.clientId,
+					after: options.after ?? 0,
+					awareness: options.awareness ?? null,
+					updates: options.updates ?? [],
+				},
+			],
+		},
+	});
+
+	return response.rooms[0];
+}
+
+/**
+ * Read live presence entries for a room via the Presence API's own REST
+ * endpoint, as a given session. Used to verify awareness written by one
+ * collaborator is visible to another.
+ *
+ * @param session Collaborative session making the request.
+ * @param room    Room identifier.
+ */
+export async function getPresence(
+	session: CollaborativeSession,
+	room: string
+): Promise<PresenceEntry[]> {
+	return session.requestUtils.rest({
+		path: `/wp-presence/v1/presence?room=${encodeURIComponent(room)}`,
+	});
 }
 
 /**

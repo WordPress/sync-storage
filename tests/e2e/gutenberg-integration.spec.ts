@@ -27,35 +27,43 @@ test.describe('Gutenberg Integration', () => {
 		expect(routes.routes).toBeDefined();
 	});
 
-	test('WP_Sync_Storage provider is active', async ({ page }) => {
-		// Check if our custom storage provider is being used
-		// by monitoring the debug log or checking for storage calls
-
-		// Make a request that would trigger collaboration routes
-		const response = await page.request.get('/wp-json/wp-collaboration/v1/updates');
-
-		// This endpoint may not exist yet, but we can check if it's registered
-		// A 404 is fine - means the route exists but needs auth/params
-		// A 403 means auth issue
-		// Anything else means the collaboration system is working
-		expect([200, 403, 404]).toContain(response.status());
-	});
-
-	test.skip('collaboration REST routes are registered', async ({ page, requestUtils }) => {
-		// REST routes may not be registered in all Gutenberg configurations
-		// This depends on feature flags and experimental features being enabled
-		// Skipping for now - the important part is the storage filter works
+	test('WP_Sync_Storage provider is active', async ({ requestUtils }) => {
+		// A real round trip through /wp-sync/v1/updates: REST route ->
+		// __unstable_wp_sync_storage filter -> Sync_Storage_Provider ->
+		// wp_collaboration table. requestUtils.rest() throws on a non-2xx
+		// response, so getting a result here already proves the provider
+		// handled the request; the shape assertions confirm it's actually our
+		// storage, not just any 200.
+		const post = await requestUtils.createPost({
+			title: 'Sync Storage Provider Check',
+			content: 'Content.',
+			status: 'publish',
+		});
+		const room = `postType/post:${post.id}`;
 
 		const response = await requestUtils.rest({
-			path: '/',
+			method: 'POST',
+			path: '/wp-sync/v1/updates',
+			data: {
+				rooms: [{ room, client_id: 1, after: 0, awareness: null, updates: [] }],
+			},
 		});
 
-		const routes = response.routes || {};
-		const collaborationRoutes = Object.keys(routes).filter(route =>
-			route.includes('wp-collaboration')
-		);
+		expect(response.rooms).toHaveLength(1);
+		expect(response.rooms[0].room).toBe(room);
+		expect(typeof response.rooms[0].end_cursor).toBe('number');
+	});
 
-		expect(collaborationRoutes.length).toBeGreaterThan(0);
+	test('sync and presence REST routes are registered', async ({ requestUtils }) => {
+		const response = await requestUtils.rest({ path: '/' });
+		const routes = Object.keys(response.routes || {});
+
+		// Actual routes registered by this Gutenberg build (23.8.0-rc.1) and
+		// the Presence API plugin. Earlier versions of this test looked for a
+		// "wp-collaboration" namespace that doesn't exist in this build.
+		expect(routes).toEqual(
+			expect.arrayContaining(['/wp-sync/v1/updates', '/wp-presence/v1/presence'])
+		);
 	});
 
 	test('storage provider handles room creation', async ({ page, admin }) => {
