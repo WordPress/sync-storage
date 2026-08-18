@@ -58,7 +58,7 @@ if ( ! defined( 'GUTENBERG_VERSION' ) ) {
 	return;
 }
 
-define( 'WP_SYNC_STORAGE_VERSION', '0.1.1' );
+define( 'WP_SYNC_STORAGE_VERSION', '0.1.3' );
 define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
 define( 'WP_SYNC_STORAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_SYNC_STORAGE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
