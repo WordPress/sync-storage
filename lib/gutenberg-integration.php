@@ -10,20 +10,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Replace Gutenberg's post meta storage with composite Presence API storage.
+ * Replace Gutenberg's post meta storage with dedicated table storage.
  *
- * This filter doesn't exist yet - requires Gutenberg PR.
- * See: https://github.com/WordPress/gutenberg/issues/80387
+ * Uses wp_collaboration table for both CRDT updates and awareness state,
+ * eliminating cache invalidation from post meta storage.
+ *
+ * Filter added in Gutenberg PR #81697.
  */
 add_filter(
-	'gutenberg_sync_storage',
+	'__unstable_wp_sync_storage',
 	function ( $default_storage ) {
-		// Only replace if Presence API is active.
-		if ( ! function_exists( 'wp_get_presence' ) ) {
-			return $default_storage;
-		}
+		RTC_Logger::event(
+			'Filter hooked: __unstable_wp_sync_storage',
+			array(
+				'default' => get_class( $default_storage ),
+				'custom'  => 'RTC_Presence_Storage',
+			)
+		);
 
-		// Use our composite storage.
 		return new RTC_Presence_Storage();
 	}
 );

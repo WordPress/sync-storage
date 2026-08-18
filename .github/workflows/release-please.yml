@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Never cancel a run in flight. This workflow tags and uploads release assets,
+# so a cancelled run leaves the release half-finished. A superseded run costs
+# a few minutes; a cancelled one costs a release.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -23,6 +26,10 @@ jobs:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
 
+  # release-please only updates the manifest and CHANGELOG. Every place
+  # WordPress reads the version verbatim — the plugin header `* Version:` —
+  # is synced by `scripts/sync-versions.sh`. The script is the same one a
+  # maintainer runs locally, so the CI behavior is grep-able.
   sync-versions:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr }}

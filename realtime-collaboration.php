@@ -4,8 +4,7 @@
  * Description: Storage layer for real-time collaborative editing in WordPress.
  * Version: 0.1.0
  * Requires at least: 7.0
- * Requires PHP: 8.0
- * Requires Plugins: presence-api, gutenberg
+ * Requires PHP: 7.4
  * Author: WordPress Core Team
  * Author URI: https://make.wordpress.org/core/
  * Text Domain: realtime-collaboration
@@ -45,33 +44,18 @@ if ( ! function_exists( 'wp_get_presence' ) ) {
 	return;
 }
 
-// Check for Gutenberg RTC experiment.
-// Note: gutenberg_sync_storage filter doesn't exist yet - needs Gutenberg PR.
+// Check for Gutenberg with __unstable_wp_sync_storage filter support.
 if ( ! defined( 'GUTENBERG_VERSION' ) ) {
 	add_action(
 		'admin_notices',
 		function () {
 			echo '<div class="notice notice-error"><p>';
-			echo esc_html__( 'Realtime Collaboration requires the Gutenberg plugin.', 'realtime-collaboration' );
+			echo esc_html__( 'Realtime Collaboration requires the Gutenberg plugin (trunk or later).', 'realtime-collaboration' );
 			echo '</p></div>';
 		}
 	);
 	return;
 }
-
-// Warn if Gutenberg doesn't have storage filter support yet.
-// This check will pass once Gutenberg adds apply_filters( 'gutenberg_sync_storage', ... ).
-add_action(
-	'admin_notices',
-	function () {
-		// Only show this notice if we haven't hooked the filter yet.
-		if ( ! has_filter( 'gutenberg_sync_storage' ) ) {
-			echo '<div class="notice notice-warning"><p>';
-			echo esc_html__( 'Realtime Collaboration is installed but inactive. Gutenberg needs gutenberg_sync_storage filter support (coming in a future release).', 'realtime-collaboration' );
-			echo '</p></div>';
-		}
-	}
-);
 
 define( 'WP_REALTIME_COLLABORATION_VERSION', '0.1.0' );
 define( 'WP_REALTIME_COLLABORATION_DB_VERSION', 1 );
@@ -88,9 +72,20 @@ function wp_realtime_collaboration_register_table() {
 }
 wp_realtime_collaboration_register_table();
 
+require_once WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'lib/class-rtc-logger.php';
 require_once WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'lib/class-rtc-presence-storage.php';
 require_once WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'lib/gutenberg-integration.php';
 require_once WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'lib/server-authority.php';
 require_once WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'lib/install.php';
 require_once WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'lib/cleanup.php';
 require_once WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'lib/migration.php';
+
+RTC_Logger::event(
+	'Plugin loaded',
+	array(
+		'version'    => WP_REALTIME_COLLABORATION_VERSION,
+		'db_version' => WP_REALTIME_COLLABORATION_DB_VERSION,
+		'presence'   => function_exists( 'wp_get_presence' ),
+		'gutenberg'  => defined( 'GUTENBERG_VERSION' ) ? GUTENBERG_VERSION : false,
+	)
+);

@@ -15,4 +15,4 @@
 - Migration from `wp_sync_storage` post meta
 - WordPress Playground blueprints for testing
 
-[0.1.0]: https://github.com/josephfusco/realtime-collaboration/releases/tag/v0.1.0
+[0.1.0]: https://github.com/WordPress/realtime-collaboration/releases/tag/v0.1.0
