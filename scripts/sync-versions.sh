@@ -32,6 +32,18 @@ rm -f sync-storage.php.bak
 
 echo "Synced plugin header version to ${VERSION}"
 
+grep -q "^define( 'WP_SYNC_STORAGE_VERSION', " sync-storage.php \
+	|| { echo "WP_SYNC_STORAGE_VERSION define() not found in sync-storage.php" >&2; exit 1; }
+
+sed -i.bak "s|^define( 'WP_SYNC_STORAGE_VERSION', '.*' );$|define( 'WP_SYNC_STORAGE_VERSION', '${VERSION}' );|" sync-storage.php
+
+grep -qFx "define( 'WP_SYNC_STORAGE_VERSION', '${VERSION}' );" sync-storage.php \
+	|| { echo "Failed to update WP_SYNC_STORAGE_VERSION in sync-storage.php" >&2; exit 1; }
+
+rm -f sync-storage.php.bak
+
+echo "Synced WP_SYNC_STORAGE_VERSION constant to ${VERSION}"
+
 grep -q '^Stable tag: ' readme.txt \
 	|| { echo "'Stable tag:' line not found in readme.txt" >&2; exit 1; }
 
