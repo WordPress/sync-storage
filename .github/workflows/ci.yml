@@ -41,3 +41,7 @@ jobs:
   typos:
     needs: gate
     uses: ./.github/workflows/typos.yml
+
+  playwright:
+    needs: gate
+    uses: ./.github/workflows/playwright.yml

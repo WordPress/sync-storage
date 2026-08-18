@@ -6,3 +6,8 @@ artifacts/
 coverage.xml
 .wp-env-gutenberg-trunk
 gutenberg-trunk/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

@@ -1,0 +1,78 @@
+name: Playwright
+
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - '**.php'
+      - '**.ts'
+      - 'tests/e2e/**'
+      - 'playwright.config.ts'
+      - '.github/workflows/playwright.yml'
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  playwright:
+    name: Playwright Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      - run: npm ci
+
+      - name: Authenticate composer to GitHub
+        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Gutenberg trunk
+        run: bash build-gutenberg.sh
+
+      - name: Start wp-env
+        run: npx wp-env start
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v7.0.0
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v7.0.0
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
