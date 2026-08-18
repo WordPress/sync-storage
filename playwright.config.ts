@@ -30,7 +30,10 @@ export default defineConfig({
 	webServer: {
 		command: 'npm run env:start',
 		url: baseURL,
-		reuseExistingServer: !process.env.CI,
+		// playwright.yml starts wp-env as its own explicit step before running
+		// tests, in both CI and local dev. Playwright must never try to start
+		// a second instance itself, or it collides on the same port.
+		reuseExistingServer: true,
 		timeout: 120_000,
 	},
 });
