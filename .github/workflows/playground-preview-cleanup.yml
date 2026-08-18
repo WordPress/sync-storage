@@ -9,7 +9,7 @@ name: Playground Preview Cleanup
 # is safe here.
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] never checks out PR code; only calls the release API with event-payload values
     types: [closed]
 
 permissions:

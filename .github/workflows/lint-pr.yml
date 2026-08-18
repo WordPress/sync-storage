@@ -1,7 +1,7 @@
 name: Lint Pull Request
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] never checks out PR code; only reads the title via env-var indirection, needed for statuses: write on fork PRs
     types:
       - opened
       - edited

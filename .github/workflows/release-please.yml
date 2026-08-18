@@ -76,6 +76,7 @@ jobs:
           mkdir -p build/sync-storage
           rsync -a --exclude-from='.distignore' ./ build/sync-storage/
           cd build && zip -r sync-storage.zip sync-storage/
-      - run: gh release upload --clobber "${{ needs.release-please.outputs.tag_name }}" build/sync-storage.zip
+      - run: gh release upload --clobber "$TAG_NAME" build/sync-storage.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}

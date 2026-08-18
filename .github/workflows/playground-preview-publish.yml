@@ -16,7 +16,7 @@ name: Playground Preview Publish
 #     this workflow.
 
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] security model documented above: PR-derived inputs are regex-validated, never sourced as shell, and URLs point only at this repo
     workflows: ["Playground Preview"]
     types: [completed]
 
