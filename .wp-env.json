@@ -2,7 +2,7 @@
 	"core": null,
 	"plugins": [
 		"https://downloads.wordpress.org/plugin/presence-api.zip",
-		"./gutenberg-trunk",
+		"./gutenberg",
 		"."
 	],
 	"config": {

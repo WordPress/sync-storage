@@ -3,7 +3,13 @@ set -eo pipefail
 
 echo "🔨 Building Gutenberg trunk for wp-env..."
 
-GUTENBERG_DIR="gutenberg-trunk"
+# Must be named "gutenberg", matching the slug in sync-storage.php's
+# "Requires Plugins" header -- wp-env mounts local plugin paths using the
+# source directory's basename, and WordPress's plugin dependency checker
+# matches "Requires Plugins" slugs against installed plugins' folder names.
+# A mismatched folder name (e.g. "gutenberg-trunk") makes WordPress report
+# the dependency as missing even while the plugin is active.
+GUTENBERG_DIR="gutenberg"
 
 # Clone if not already done
 if [ ! -d "$GUTENBERG_DIR" ]; then
