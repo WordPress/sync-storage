@@ -1,4 +1,4 @@
-# Realtime Collaboration Storage Plugin
+# Sync Storage Storage Plugin
 
 > **Composite storage layer for WordPress real-time collaborative editing**  
 > Eliminates post meta cache invalidation by delegating awareness to [Presence API](https://wordpress.org/plugins/presence-api/) and CRDT updates to a dedicated `wp_collaboration` table.
@@ -8,7 +8,7 @@
 ```
 Gutenberg (trunk with __unstable_wp_sync_storage filter)
     ↓
-realtime-collaboration plugin (WP_Sync_Storage implementation)
+sync-storage plugin (WP_Sync_Storage implementation)
     ├─ Awareness → Presence API (wp_presence table)
     └─ CRDT updates → wp_collaboration table
 ```
@@ -22,8 +22,8 @@ realtime-collaboration plugin (WP_Sync_Storage implementation)
 ### One-Command Setup
 
 ```bash
-git clone https://github.com/WordPress/realtime-collaboration.git
-cd realtime-collaboration
+git clone https://github.com/WordPress/sync-storage.git
+cd sync-storage
 npm install
 npm run env:start  # Builds Gutenberg trunk (~3 min first run, <10s after)
 ```
@@ -33,18 +33,18 @@ npm run env:start  # Builds Gutenberg trunk (~3 min first run, <10s after)
 
 **Watch integration logs**:
 ```bash
-docker exec $(docker ps -q --filter "name=realtime-collaboration.*wordpress-1") tail -f /var/www/html/wp-content/debug.log
+docker exec $(docker ps -q --filter "name=sync-storage.*wordpress-1") tail -f /var/www/html/wp-content/debug.log
 ```
 
 Look for:
 - `[RTC] Filter hooked: __unstable_wp_sync_storage` (storage replacement working)
-- `[RTC] Storage initialized` (RTC_Presence_Storage active)
+- `[RTC] Storage initialized` (Sync_Storage_Presence_Storage active)
 
 **Stop**: `npm run env:stop`
 
 ### WordPress Playground (Zero Install)
 
-[![Try in WordPress Playground](https://img.shields.io/badge/Try-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/realtime-collaboration/main/blueprint.json)
+[![Try in WordPress Playground](https://img.shields.io/badge/Try-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/sync-storage/main/blueprint.json)
 
 Click the badge above for a zero-install browser demo.
 

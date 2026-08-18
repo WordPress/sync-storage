@@ -1,8 +1,8 @@
 <?php
 /**
- * PHPUnit bootstrap file for the Realtime Collaboration plugin.
+ * PHPUnit bootstrap file for the Sync Storage plugin.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 // Determine the WordPress test suite location.
@@ -35,7 +35,7 @@ function _manually_load_plugin() {
 		require dirname( __DIR__, 2 ) . '/presence-api/presence-api.php';
 	}
 
-	require dirname( __DIR__ ) . '/realtime-collaboration.php';
+	require dirname( __DIR__ ) . '/sync-storage.php';
 }
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 

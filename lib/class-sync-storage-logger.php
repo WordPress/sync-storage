@@ -1,8 +1,8 @@
 <?php
 /**
- * Debug logging for RTC integration.
+ * Debug logging for sync storage operations.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,11 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Simple logger for RTC operations.
+ * Simple logger for sync storage operations.
  *
  * Logs to debug.log when WP_DEBUG_LOG is enabled.
  */
-class RTC_Logger {
+class Sync_Storage_Logger {
 
 	/**
 	 * Log a message with context.
@@ -28,7 +28,7 @@ class RTC_Logger {
 		}
 
 		$formatted = sprintf(
-			'[RTC] %s',
+			'[Sync] %s',
 			$message
 		);
 

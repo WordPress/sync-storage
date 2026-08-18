@@ -1,11 +1,11 @@
 # Changelog
 
-## [0.1.1](https://github.com/josephfusco/realtime-collaboration/compare/v0.1.0...v0.1.1) (2026-08-18)
+## [0.1.1](https://github.com/josephfusco/sync-storage/compare/v0.1.0...v0.1.1) (2026-08-18)
 
 
 ### Bug Fixes
 
-* remove UNIQUE KEY constraint, fix multisite activation, use RTC_Logger consistently ([557e6ba](https://github.com/josephfusco/realtime-collaboration/commit/557e6baf92bed09d2235af639be44760e437be9d))
+* remove UNIQUE KEY constraint, fix multisite activation, use RTC_Logger consistently ([557e6ba](https://github.com/josephfusco/sync-storage/commit/557e6baf92bed09d2235af639be44760e437be9d))
 
 ## [0.1.0] - 2026-08-15
 
@@ -22,4 +22,4 @@
 - Migration from `wp_sync_storage` post meta
 - WordPress Playground blueprints for testing
 
-[0.1.0]: https://github.com/WordPress/realtime-collaboration/releases/tag/v0.1.0
+[0.1.0]: https://github.com/WordPress/sync-storage/releases/tag/v0.1.0

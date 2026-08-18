@@ -2,7 +2,7 @@
 /**
  * Server authority: Server decides when RTC should be active based on Presence API.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,7 +23,7 @@ add_action(
 		$post_id = (int) $matches[1];
 
 		// Flag that RTC is active for this post.
-		update_post_meta( $post_id, '_rtc_collaboration_active', true );
+		update_post_meta( $post_id, '_sync_storage_active', true );
 
 		// Optionally notify via action.
 		do_action( 'rtc_room_active', $post_id, $entries );
@@ -45,7 +45,7 @@ add_action(
 		$post_id = (int) $matches[1];
 
 		// Clear RTC flag.
-		delete_post_meta( $post_id, '_rtc_collaboration_active' );
+		delete_post_meta( $post_id, '_sync_storage_active' );
 
 		do_action( 'rtc_room_inactive', $post_id, $entries );
 	},

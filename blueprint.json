@@ -38,7 +38,7 @@
 			"step": "installPlugin",
 			"pluginZipFile": {
 				"resource": "url",
-				"url": "https://github.com/WordPress/realtime-collaboration/archive/main.zip"
+				"url": "https://github.com/WordPress/sync-storage/archive/main.zip"
 			},
 			"options": {
 				"activate": true
@@ -58,7 +58,7 @@
 		},
 		{
 			"step": "runPHP",
-			"code": "<?php\n// Verify all plugins are active\n$plugins = ['presence-api/presence-api.php', 'gutenberg/gutenberg.php', 'realtime-collaboration/realtime-collaboration.php'];\nforeach ($plugins as $plugin) {\n    if (!is_plugin_active($plugin)) {\n        activate_plugin($plugin);\n    }\n}\necho 'All plugins activated';"
+			"code": "<?php\n// Verify all plugins are active\n$plugins = ['presence-api/presence-api.php', 'gutenberg/gutenberg.php', 'sync-storage/sync-storage.php'];\nforeach ($plugins as $plugin) {\n    if (!is_plugin_active($plugin)) {\n        activate_plugin($plugin);\n    }\n}\necho 'All plugins activated';"
 		}
 	]
 }

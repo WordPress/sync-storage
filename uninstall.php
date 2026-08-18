@@ -1,8 +1,8 @@
 <?php
 /**
- * Uninstall script for Realtime Collaboration.
+ * Uninstall script for Sync Storage.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
@@ -16,11 +16,11 @@ global $wpdb;
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}collaboration" );
 
 // Remove options.
-delete_option( 'rtc_collaboration_db_version' );
-delete_option( 'rtc_migrated_from_post_meta' );
+delete_option( 'sync_storage_db_version' );
+delete_option( 'sync_storage_migrated_from_post_meta' );
 
 // Clear scheduled cron.
-wp_clear_scheduled_hook( 'rtc_cleanup_stale_updates' );
+wp_clear_scheduled_hook( 'sync_storage_cleanup_old_updates' );
 
 // On multisite, clean up all sites.
 if ( is_multisite() ) {
@@ -30,9 +30,9 @@ if ( is_multisite() ) {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}collaboration" );
-		delete_option( 'rtc_collaboration_db_version' );
-		delete_option( 'rtc_migrated_from_post_meta' );
-		wp_clear_scheduled_hook( 'rtc_cleanup_stale_updates' );
+		delete_option( 'sync_storage_db_version' );
+		delete_option( 'sync_storage_migrated_from_post_meta' );
+		wp_clear_scheduled_hook( 'sync_storage_cleanup_old_updates' );
 
 		restore_current_blog();
 	}

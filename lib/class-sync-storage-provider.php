@@ -2,7 +2,7 @@
 /**
  * Composite storage: Awareness via Presence API, CRDT updates via wp_collaboration.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Implements WP_Sync_Storage interface from Gutenberg.
  */
-class RTC_Presence_Storage implements WP_Sync_Storage {
+class Sync_Storage_Provider implements WP_Sync_Storage {
 
 	/**
 	 * Cache of cursors by room (last returned update ID).
@@ -28,7 +28,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 	 * Constructor.
 	 */
 	public function __construct() {
-		RTC_Logger::event( 'Storage initialized', array( 'class' => __CLASS__ ) );
+		Sync_Storage_Logger::event( 'Storage initialized', array( 'class' => __CLASS__ ) );
 	}
 
 	/**
@@ -56,15 +56,15 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 	 * @return array<int, mixed> Awareness state array (Gutenberg sync server format).
 	 */
 	public function get_awareness_state( string $room ): array {
-		RTC_Logger::storage( 'get_awareness_state', $room );
+		Sync_Storage_Logger::storage( 'get_awareness_state', $room );
 
 		if ( ! function_exists( 'wp_get_presence' ) ) {
-			RTC_Logger::event( 'Presence API not available' );
+			Sync_Storage_Logger::event( 'Presence API not available' );
 			return array();
 		}
 
 		$entries = wp_get_presence( $room );
-		RTC_Logger::presence( 'wp_get_presence', $room, $entries );
+		Sync_Storage_Logger::presence( 'wp_get_presence', $room, $entries );
 
 		if ( empty( $entries ) ) {
 			return array();
@@ -84,7 +84,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 			$entries
 		);
 
-		RTC_Logger::storage( 'get_awareness_state:result', $room, $awareness );
+		Sync_Storage_Logger::storage( 'get_awareness_state:result', $room, $awareness );
 		return $awareness;
 	}
 
@@ -98,10 +98,10 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 	 * @return bool True on success.
 	 */
 	public function set_awareness_state( string $room, array $awareness ): bool {
-		RTC_Logger::storage( 'set_awareness_state', $room, $awareness );
+		Sync_Storage_Logger::storage( 'set_awareness_state', $room, $awareness );
 
 		if ( ! function_exists( 'wp_set_presence' ) ) {
-			RTC_Logger::event( 'Presence API not available' );
+			Sync_Storage_Logger::event( 'Presence API not available' );
 			return false;
 		}
 
@@ -119,7 +119,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 				$entry['wp_user_id']
 			);
 
-			RTC_Logger::presence(
+			Sync_Storage_Logger::presence(
 				'wp_set_presence',
 				$room,
 				array(
@@ -140,10 +140,10 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 	 * @return bool True on success.
 	 */
 	public function add_update( string $room, $update ): bool {
-		RTC_Logger::storage( 'add_update', $room );
+		Sync_Storage_Logger::storage( 'add_update', $room );
 
 		if ( ! $this->validate_access( $room ) ) {
-			RTC_Logger::event( 'Access denied', array( 'room' => $room ) );
+			Sync_Storage_Logger::event( 'Access denied', array( 'room' => $room ) );
 			return false;
 		}
 
@@ -161,7 +161,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 		);
 
 		$success = false !== $result;
-		RTC_Logger::storage(
+		Sync_Storage_Logger::storage(
 			'add_update:result',
 			$room,
 			array(
@@ -218,10 +218,10 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 	 * @return array<int, mixed> Updates array.
 	 */
 	public function get_updates_after_cursor( string $room, int $cursor ): array {
-		RTC_Logger::storage( 'get_updates_after_cursor', $room, array( 'cursor' => $cursor ) );
+		Sync_Storage_Logger::storage( 'get_updates_after_cursor', $room, array( 'cursor' => $cursor ) );
 
 		if ( ! $this->validate_access( $room ) ) {
-			RTC_Logger::event( 'Access denied', array( 'room' => $room ) );
+			Sync_Storage_Logger::event( 'Access denied', array( 'room' => $room ) );
 			return array();
 		}
 
@@ -240,7 +240,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 		);
 
 		if ( ! $results ) {
-			RTC_Logger::storage( 'get_updates_after_cursor:result', $room, array( 'count' => 0 ) );
+			Sync_Storage_Logger::storage( 'get_updates_after_cursor:result', $room, array( 'count' => 0 ) );
 			return array();
 		}
 
@@ -258,7 +258,7 @@ class RTC_Presence_Storage implements WP_Sync_Storage {
 			)
 		);
 
-		RTC_Logger::storage(
+		Sync_Storage_Logger::storage(
 			'get_updates_after_cursor:result',
 			$room,
 			array(

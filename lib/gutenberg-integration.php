@@ -2,7 +2,7 @@
 /**
  * Gutenberg integration: Hook storage filter to replace post meta storage.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,14 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_filter(
 	'__unstable_wp_sync_storage',
 	function ( $default_storage ) {
-		RTC_Logger::event(
+		Sync_Storage_Logger::event(
 			'Filter hooked: __unstable_wp_sync_storage',
 			array(
 				'default' => get_class( $default_storage ),
-				'custom'  => 'RTC_Presence_Storage',
+				'custom'  => 'Sync_Storage_Provider',
 			)
 		);
 
-		return new RTC_Presence_Storage();
+		return new Sync_Storage_Provider();
 	}
 );

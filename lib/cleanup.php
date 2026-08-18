@@ -2,14 +2,14 @@
 /**
  * Cleanup: Delete old collaboration updates (safety net).
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-add_action( 'rtc_cleanup_stale_updates', 'rtc_cleanup_old_updates' );
+add_action( 'rtc_cleanup_stale_updates', 'sync_storage_cleanup_old_updates' );
 
 /**
  * Cleanup old collaboration updates.
@@ -17,7 +17,7 @@ add_action( 'rtc_cleanup_stale_updates', 'rtc_cleanup_old_updates' );
  * Compaction should handle most cleanup, but this ensures
  * abandoned rooms don't grow unbounded.
  */
-function rtc_cleanup_old_updates() {
+function sync_storage_cleanup_old_updates() {
 	global $wpdb;
 
 	// Delete updates older than 7 days (Yjs uses milliseconds).
@@ -34,7 +34,7 @@ function rtc_cleanup_old_updates() {
 	);
 
 	if ( $deleted > 0 ) {
-		RTC_Logger::event(
+		Sync_Storage_Logger::event(
 			'Cleanup complete',
 			array( 'deleted_count' => $deleted )
 		);

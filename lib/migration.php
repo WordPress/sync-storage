@@ -2,7 +2,7 @@
 /**
  * Migration: Migrate existing RTC data from post meta to wp_collaboration table.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Migrate existing RTC data from post meta to wp_collaboration table.
  */
-function rtc_migrate_post_meta_storage() {
+function sync_storage_migrate_post_meta() {
 	// Skip if already migrated.
 	if ( get_option( 'rtc_migrated_from_post_meta' ) ) {
 		return;
@@ -60,7 +60,7 @@ function rtc_migrate_post_meta_storage() {
 
 	update_option( 'rtc_migrated_from_post_meta', true );
 
-	RTC_Logger::event(
+	Sync_Storage_Logger::event(
 		'Migration complete',
 		array( 'migrated_count' => $migrated )
 	);

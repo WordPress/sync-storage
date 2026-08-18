@@ -2,22 +2,22 @@
 /**
  * Installation: Create wp_collaboration table and schedule cleanup.
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-register_activation_hook( WP_REALTIME_COLLABORATION_PLUGIN_DIR . 'realtime-collaboration.php', 'rtc_collaboration_install' );
+register_activation_hook( WP_SYNC_STORAGE_PLUGIN_DIR . 'realtime-collaboration.php', 'sync_storage_install' );
 
 /**
  * Create wp_collaboration table on activation.
  */
-function rtc_collaboration_install() {
+function sync_storage_install() {
 	global $wpdb;
 
-	RTC_Logger::event( 'Installation started' );
+	Sync_Storage_Logger::event( 'Installation started' );
 
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -38,7 +38,7 @@ function rtc_collaboration_install() {
 		) $charset_collate;"
 	);
 
-	RTC_Logger::event(
+	Sync_Storage_Logger::event(
 		'Table created',
 		array(
 			'table'   => $wpdb->collaboration,
@@ -46,34 +46,34 @@ function rtc_collaboration_install() {
 		)
 	);
 
-	update_option( 'rtc_collaboration_db_version', WP_REALTIME_COLLABORATION_DB_VERSION );
+	update_option( 'sync_storage_db_version', WP_SYNC_STORAGE_DB_VERSION );
 
 	// Schedule cleanup cron.
 	if ( ! wp_next_scheduled( 'rtc_cleanup_stale_updates' ) ) {
 		wp_schedule_event( time(), 'daily', 'rtc_cleanup_stale_updates' );
-		RTC_Logger::event( 'Cleanup cron scheduled' );
+		Sync_Storage_Logger::event( 'Cleanup cron scheduled' );
 	}
 
 	// Migrate from post meta if needed.
-	rtc_migrate_post_meta_storage();
+	sync_storage_migrate_post_meta();
 
-	RTC_Logger::event( 'Installation complete' );
+	Sync_Storage_Logger::event( 'Installation complete' );
 }
 
 /**
  * Multisite: Activate on newly created sites.
  */
 if ( is_multisite() ) {
-	add_action( 'wpmu_new_blog', 'rtc_collaboration_install_new_site', 10, 1 );
+	add_action( 'wpmu_new_blog', 'sync_storage_install_new_site', 10, 1 );
 
 	/**
 	 * Install on newly created multisite site.
 	 *
 	 * @param int $blog_id Site ID.
 	 */
-	function rtc_collaboration_install_new_site( $blog_id ) {
+	function sync_storage_install_new_site( $blog_id ) {
 		switch_to_blog( $blog_id );
-		rtc_collaboration_install();
+		sync_storage_install();
 		restore_current_blog();
 	}
 }

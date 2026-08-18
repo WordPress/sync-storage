@@ -35,7 +35,7 @@ jobs:
       - name: Verify the script made expected changes
         run: |
           VERSION=$(jq -r '."."' .release-please-manifest.json)
-          if ! grep -qFx " * Version: ${VERSION}" realtime-collaboration.php; then
+          if ! grep -qFx " * Version: ${VERSION}" sync-storage.php; then
             echo "::error::sync-versions.sh did not update plugin header correctly"
             exit 1
           fi

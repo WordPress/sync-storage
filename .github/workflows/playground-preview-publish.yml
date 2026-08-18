@@ -72,7 +72,7 @@ jobs:
           mkdir -p artifacts/release-assets artifacts/pr-meta
           unzip -q -o -d artifacts/release-assets release-assets.zip
           unzip -q -o -d artifacts/pr-meta pr-meta.zip
-          test -f artifacts/release-assets/realtime-collaboration.zip
+          test -f artifacts/release-assets/sync-storage.zip
           test -f artifacts/release-assets/
           test -f artifacts/release-assets/
           test -f artifacts/pr-meta/pr-meta.json
@@ -99,7 +99,7 @@ jobs:
           # latest preview from a stable URL. Tolerate first-time absence.
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$TAG" \
-            artifacts/release-assets/realtime-collaboration.zip \
+            artifacts/release-assets/sync-storage.zip \
             artifacts/release-assets/ \
             artifacts/release-assets/ \
             --prerelease \
@@ -116,7 +116,7 @@ jobs:
           TAG="preview-pr-${PR_NUMBER}"
           # Both URLs resolve to github.com/${REPO} — never to the PR's
           # head repository — so a fork PR cannot redirect Playground.
-          PLUGIN_URL="https://github.com/${REPO}/releases/download/${TAG}/realtime-collaboration.zip"
+          PLUGIN_URL="https://github.com/${REPO}/releases/download/${TAG}/sync-storage.zip"
           SEEDER_URL="https://github.com/${REPO}/releases/download/${TAG}/"
           HELPER_URL="https://github.com/${REPO}/releases/download/${TAG}/"
 
@@ -156,7 +156,7 @@ jobs:
           PLAYGROUND_URL_40: ${{ steps.playground.outputs.url_40 }}
         with:
           script: |
-            const marker = '<!-- realtime-collaboration:playground-preview -->';
+            const marker = '<!-- sync-storage:playground-preview -->';
             const url = process.env.PLAYGROUND_URL;
             const url40 = process.env.PLAYGROUND_URL_40;
             const sha = process.env.HEAD_SHA;
@@ -169,7 +169,7 @@ jobs:
               '',
               `[![Open in WordPress Playground](${badge})](${url})`,
               '',
-              "Boots a fresh WordPress with this PR's realtime-collaboration build, seeds 5 demo users, and drops you on the dashboard.",
+              "Boots a fresh WordPress with this PR's sync-storage build, seeds 5 demo users, and drops you on the dashboard.",
               '',
               `<sub>Stress-test variant: [40 demo users](${url40}) · Built from \`${sha}\`. Auto-updates when you push.</sub>`,
             ].join('\n');

@@ -20,14 +20,14 @@ if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
 	exit 1
 fi
 
-grep -q '^ \* Version: ' realtime-collaboration.php \
-	|| { echo "Plugin header 'Version:' line not found in realtime-collaboration.php" >&2; exit 1; }
+grep -q '^ \* Version: ' sync-storage.php \
+	|| { echo "Plugin header 'Version:' line not found in sync-storage.php" >&2; exit 1; }
 
-sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" realtime-collaboration.php
+sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" sync-storage.php
 
-grep -qFx " * Version: ${VERSION}" realtime-collaboration.php \
-	|| { echo "Failed to update plugin header version in realtime-collaboration.php" >&2; exit 1; }
+grep -qFx " * Version: ${VERSION}" sync-storage.php \
+	|| { echo "Failed to update plugin header version in sync-storage.php" >&2; exit 1; }
 
-rm -f realtime-collaboration.php.bak
+rm -f sync-storage.php.bak
 
 echo "Synced plugin header version to ${VERSION}"

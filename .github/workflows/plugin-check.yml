@@ -32,13 +32,13 @@ jobs:
 
       - name: Build plugin
         run: |
-          mkdir -p build/realtime-collaboration
-          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/realtime-collaboration/
+          mkdir -p build/sync-storage
+          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/sync-storage/
 
       - name: Configure wp-env to mount built plugin
         run: |
           cat > .wp-env.override.json <<'JSON'
-          { "plugins": [ "./build/realtime-collaboration" ] }
+          { "plugins": [ "./build/sync-storage" ] }
           JSON
 
       - run: wp-env start
@@ -46,7 +46,7 @@ jobs:
       - name: Install Plugin Check
         run: |
           wp-env run cli wp plugin install plugin-check --activate
-          wp-env run cli wp plugin activate realtime-collaboration
+          wp-env run cli wp plugin activate sync-storage
 
       - name: Run Plugin Check
-        run: wp-env run cli wp plugin check realtime-collaboration --format=strict-table
+        run: wp-env run cli wp plugin check sync-storage --format=strict-table

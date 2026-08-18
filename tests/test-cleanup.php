@@ -2,14 +2,14 @@
 /**
  * Tests for cron cleanup (lib/cleanup.php).
  *
- * @package Realtime_Collaboration
+ * @package Sync_Storage
  *
  * @group rtc
  * @group cron
  */
-class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
+class WP_Test_Sync_Storage_Cleanup extends WP_UnitTestCase {
 
-	const HOOK = 'rtc_cleanup_stale_updates';
+	const HOOK = 'sync_storage_cleanup_stale_updates';
 
 	public function set_up() {
 		parent::set_up();
@@ -28,14 +28,14 @@ class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::rtc_cleanup_old_updates
+	 * @covers ::sync_storage_cleanup_old_updates
 	 */
 	public function test_cleanup_hook_is_registered() {
-		$this->assertTrue( has_action( self::HOOK, 'rtc_cleanup_old_updates' ) !== false );
+		$this->assertTrue( has_action( self::HOOK, 'sync_storage_cleanup_old_updates' ) !== false );
 	}
 
 	/**
-	 * @covers ::rtc_cleanup_old_updates
+	 * @covers ::sync_storage_cleanup_old_updates
 	 */
 	public function test_cleanup_removes_old_updates() {
 		global $wpdb;
@@ -77,7 +77,7 @@ class WP_Test_RTC_Cleanup extends WP_UnitTestCase {
 		);
 
 		// Run cleanup
-		rtc_cleanup_old_updates();
+		sync_storage_cleanup_old_updates();
 
 		// Verify old update was deleted
 		$old_count = $wpdb->get_var(

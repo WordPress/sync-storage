@@ -1,7 +1,7 @@
 {
-	"name": "wordpress/realtime-collaboration",
+	"name": "wordpress/sync-storage",
 	"license": "GPL-2.0-or-later",
-	"description": "Storage layer for real-time collaborative editing in WordPress.",
+	"description": "WP_Sync_Storage implementation for WordPress collaborative editing.",
 	"require": {
 		"php": ">=7.4"
 	},

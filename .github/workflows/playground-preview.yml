@@ -1,6 +1,6 @@
 name: Playground Preview
 
-# Builds `realtime-collaboration.zip` from the PR commit and uploads it
+# Builds `sync-storage.zip` from the PR commit and uploads it
 # (plus metadata) as workflow artifacts. The sibling `Playground Preview
 # Publish` workflow picks the artifacts up on `workflow_run` and hands
 # them to GitHub Releases for hosting — we don't depend on any
@@ -38,18 +38,18 @@ jobs:
 
       - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
-      - name: Build realtime-collaboration.zip
+      - name: Build sync-storage.zip
         run: |
           set -euo pipefail
-          mkdir -p build/realtime-collaboration
-          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/realtime-collaboration/
-          (cd build && zip -qr realtime-collaboration.zip realtime-collaboration/)
+          mkdir -p build/sync-storage
+          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/sync-storage/
+          (cd build && zip -qr sync-storage.zip sync-storage/)
 
       - name: Smoke-test the build
         run: |
           set -euo pipefail
-          test -f build/realtime-collaboration/realtime-collaboration.php
-          find build/realtime-collaboration -name '*.php' -print0 \
+          test -f build/sync-storage/sync-storage.php
+          find build/sync-storage -name '*.php' -print0 \
             | xargs -0 -n1 -P 4 php -l > /dev/null
 
       - name: Schema-validate blueprint
@@ -66,7 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-assets
-          cp build/realtime-collaboration.zip release-assets/
+          cp build/sync-storage.zip release-assets/
 
       - name: Save PR metadata
         env:
