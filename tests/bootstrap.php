@@ -26,8 +26,8 @@ require_once "{$_tests_dir}/includes/functions.php";
  */
 function _manually_load_plugin() {
 	// Load Gutenberg trunk (required dependency)
-	if ( file_exists( dirname( __DIR__ ) . '/gutenberg-trunk/gutenberg.php' ) ) {
-		require dirname( __DIR__ ) . '/gutenberg-trunk/gutenberg.php';
+	if ( file_exists( dirname( __DIR__ ) . '/gutenberg/gutenberg.php' ) ) {
+		require dirname( __DIR__ ) . '/gutenberg/gutenberg.php';
 	}
 
 	// Load Presence API dependency (stub if not available)
@@ -38,6 +38,14 @@ function _manually_load_plugin() {
 	require dirname( __DIR__ ) . '/sync-storage.php';
 }
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
+
+/**
+ * Create database tables after WordPress is loaded.
+ */
+function _create_test_tables() {
+	sync_storage_install();
+}
+tests_add_filter( 'init', '_create_test_tables' );
 
 // Start up the WP testing environment.
 require "{$_tests_dir}/includes/bootstrap.php";

@@ -31,3 +31,15 @@ grep -qFx " * Version: ${VERSION}" sync-storage.php \
 rm -f sync-storage.php.bak
 
 echo "Synced plugin header version to ${VERSION}"
+
+grep -q '^Stable tag: ' readme.txt \
+	|| { echo "'Stable tag:' line not found in readme.txt" >&2; exit 1; }
+
+sed -i.bak "s|^Stable tag: .*$|Stable tag: ${VERSION}|" readme.txt
+
+grep -qFx "Stable tag: ${VERSION}" readme.txt \
+	|| { echo "Failed to update Stable tag in readme.txt" >&2; exit 1; }
+
+rm -f readme.txt.bak
+
+echo "Synced readme.txt Stable tag to ${VERSION}"
