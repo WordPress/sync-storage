@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.4](https://github.com/WordPress/sync-storage/compare/v0.1.3...v0.1.4) (2026-08-18)
+
+
+### Bug Fixes
+
+* stop Playwright from starting a second wp-env instance in CI ([8c308b9](https://github.com/WordPress/sync-storage/commit/8c308b9b1fd5f3a1d3aeab88f29278fb4e9bc766))
+* stop plugin-check's isolated wp-env from crashing on Requires Plugins ([4d30914](https://github.com/WordPress/sync-storage/commit/4d30914f337c3240e8a2c2557e215568ba22e327))
+* sync all three version copies, not just the plugin header ([1880d4e](https://github.com/WordPress/sync-storage/commit/1880d4e10ef58821b1c3d89b4d3f715e5e22315a))
+
+
+### Performance Improvements
+
+* cache Gutenberg trunk checkout and Playwright browsers in CI ([5b316fd](https://github.com/WordPress/sync-storage/commit/5b316fd5363b0abd0f9b7b2e716b3371181db2c4))
+* cache Gutenberg trunk checkout and Playwright browsers in CI ([3dcc316](https://github.com/WordPress/sync-storage/commit/3dcc316009916721df778e394fd5ee4544bb1ac8))
+
 ## [0.1.3](https://github.com/josephfusco/sync-storage/compare/v0.1.2...v0.1.3) (2026-08-18)
 
 
