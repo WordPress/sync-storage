@@ -11,10 +11,18 @@ echo "🔨 Building Gutenberg trunk for wp-env..."
 # the dependency as missing even while the plugin is active.
 GUTENBERG_DIR="gutenberg"
 
-# Clone if not already done
+# Clone if not already done. If a cached checkout already exists (CI
+# restores one to skip the ~1 minute fresh clone), fetch and reset to the
+# latest trunk commit so the cache never goes stale.
 if [ ! -d "$GUTENBERG_DIR" ]; then
     echo "📦 Cloning Gutenberg trunk..."
     git clone --depth=1 https://github.com/WordPress/gutenberg.git "$GUTENBERG_DIR"
+else
+    echo "📦 Updating cached Gutenberg checkout to latest trunk..."
+    cd "$GUTENBERG_DIR"
+    git fetch --depth=1 origin trunk
+    git reset --hard origin/trunk
+    cd ..
 fi
 
 # Build

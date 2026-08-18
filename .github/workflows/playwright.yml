@@ -47,8 +47,28 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      # Restores the most recent cached checkout as a starting point, then
+      # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
+      # commit before building, so npm install/webpack build run
+      # incrementally instead of from scratch every run. Always saves a
+      # fresh cache under this run's own key so the restore point keeps
+      # rolling forward; it never pins to a stale commit.
+      - name: Cache Gutenberg trunk checkout
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: gutenberg
+          key: gutenberg-trunk-${{ github.run_id }}
+          restore-keys: |
+            gutenberg-trunk-
 
       - name: Build Gutenberg trunk
         run: bash build-gutenberg.sh
