@@ -5,12 +5,13 @@
  * This could evolve into @wordpress/e2e-test-utils-collaborative package.
  */
 import type { Browser, BrowserContext, Page } from '@playwright/test';
-import { Admin } from '@wordpress/e2e-test-utils-playwright';
+import { Admin, RequestUtils } from '@wordpress/e2e-test-utils-playwright';
 
 export interface CollaborativeSession {
 	context: BrowserContext;
 	page: Page;
 	admin: Admin;
+	requestUtils: RequestUtils;
 	userId: number;
 	userName: string;
 }
@@ -33,7 +34,11 @@ export async function createCollaborativeSessions(
 			storageState: undefined, // Fresh session for each user
 		});
 		const page = await context.newPage();
-		const admin = new Admin({ page, request: page.request });
+		const requestUtils = await RequestUtils.setup({
+			baseURL: process.env.WP_BASE_URL || 'http://localhost:8888',
+			storageState: undefined,
+		});
+		const admin = new Admin({ page, request: requestUtils });
 
 		// Each session gets a unique user
 		const userName = `editor${i + 1}`;
@@ -43,6 +48,7 @@ export async function createCollaborativeSessions(
 			context,
 			page,
 			admin,
+			requestUtils,
 			userId,
 			userName,
 		});
