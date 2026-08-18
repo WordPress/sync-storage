@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3](https://github.com/josephfusco/sync-storage/compare/v0.1.2...v0.1.3) (2026-08-18)
+
+
+### Bug Fixes
+
+* correct timestamp units, awareness access control, and uninstall mismatches ([5c26bdf](https://github.com/josephfusco/sync-storage/commit/5c26bdf26285a21aece4b353208c365da1810c4b))
+* name the local Gutenberg trunk checkout to match its dependency slug ([6b13d19](https://github.com/josephfusco/sync-storage/commit/6b13d19470e1f5284ecea53d14d34e76fb2ec3c2))
+* resolve Plugin Check findings for WordPress.org distribution ([21690da](https://github.com/josephfusco/sync-storage/commit/21690dade38785ff39dfce85073693410bd68dd7))
+
 ## [0.1.2](https://github.com/josephfusco/sync-storage/compare/v0.1.1...v0.1.2) (2026-08-18)
 
 
