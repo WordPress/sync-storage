@@ -37,6 +37,18 @@ jobs:
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
         run: composer install --no-interaction
+      # Restores the most recent cached checkout as a starting point, then
+      # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
+      # commit before building. Keyed per PHP version since each matrix leg
+      # runs on its own isolated runner. Always saves a fresh cache under
+      # this run's own key so the restore point keeps rolling forward.
+      - name: Cache Gutenberg trunk checkout
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: gutenberg
+          key: gutenberg-trunk-${{ matrix.php }}-${{ github.run_id }}
+          restore-keys: |
+            gutenberg-trunk-${{ matrix.php }}-
       - name: Build Gutenberg trunk and start wp-env
         run: bash build-gutenberg.sh && npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
         env:
