@@ -1,177 +1,127 @@
-# Sync Storage Storage Plugin
+# Sync Storage
 
-> **Composite storage layer for WordPress real-time collaborative editing**  
-> Eliminates post meta cache invalidation by delegating awareness to [Presence API](https://wordpress.org/plugins/presence-api/) and CRDT updates to a dedicated `wp_collaboration` table.
+[![CI](https://github.com/WordPress/sync-storage/actions/workflows/ci.yml/badge.svg)](https://github.com/WordPress/sync-storage/actions/workflows/ci.yml)
+[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/sync-storage/main/blueprint.json)
 
-## Architecture
+> **Status:** Experimental feature plugin
 
-```
-Gutenberg (trunk with __unstable_wp_sync_storage filter)
-    ↓
-sync-storage plugin (WP_Sync_Storage implementation)
-    ├─ Awareness → Presence API (wp_presence table)
-    └─ CRDT updates → wp_collaboration table
-```
+Storage layer for Gutenberg's real-time collaborative editing.
 
-**Zero cache side effects**: No `wp_cache_set_posts_last_changed()` calls, no site-wide WP_Query invalidation.
+## Problem
 
-> ⚠️ **Temporary**: Requires Gutenberg trunk build until `__unstable_wp_sync_storage` filter ships in a release (merged [PR #81697](https://github.com/WordPress/gutenberg/pull/81697)). First run builds trunk (~3 min), cached after.
+Gutenberg's real-time collaboration needs somewhere to keep two kinds of data: ephemeral awareness (who's in the room, cursor position) and a persistent log of CRDT updates for each document. Storing either as post meta means every write invalidates post caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin implements Gutenberg's `WP_Sync_Storage` interface to keep both out of post meta entirely: awareness is delegated to [Presence API](https://wordpress.org/plugins/presence-api/)'s `wp_presence` table, and CRDT updates go into a dedicated `wp_collaboration` table.
 
-## Quick Start
-
-### One-Command Setup
+## Run locally
 
 ```bash
 git clone https://github.com/WordPress/sync-storage.git
 cd sync-storage
 npm install
-npm run env:start  # Builds Gutenberg trunk (~3 min first run, <10s after)
+npm run env:start
 ```
 
-**Access**: http://localhost:8888/wp-admin  
-**Credentials**: admin / password
+Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).
 
-**Watch integration logs**:
-```bash
-docker exec $(docker ps -q --filter "name=sync-storage.*wordpress-1") tail -f /var/www/html/wp-content/debug.log
-```
+The first run builds Gutenberg from trunk, since the `__unstable_wp_sync_storage` filter this plugin hooks hasn't shipped in a tagged Gutenberg release yet. That takes a few minutes; subsequent runs reuse the build.
 
-Look for:
-- `[Sync] Filter hooked: __unstable_wp_sync_storage` (storage replacement working)
-- `[Sync] Storage initialized` (Sync_Storage_Provider active)
+## Data flow
 
-**Stop**: `npm run env:stop`
+**Awareness**
+1. Gutenberg calls `set_awareness_state( $room, $awareness )`
+2. Each entry is forwarded to Presence API's `wp_set_presence()`
+3. Reads go through `get_awareness_state( $room )`, which calls `wp_get_presence()` and reshapes the result into Gutenberg's expected format
 
-### WordPress Playground (Zero Install)
+**CRDT updates**
+1. Gutenberg calls `add_update( $room, $update )`
+2. The update is inserted into `wp_collaboration` as an opaque, JSON-encoded row
+3. Gutenberg polls `get_updates_after_cursor( $room, $cursor )` to fetch anything new
+4. `remove_updates_before_cursor()` deletes compacted rows once Gutenberg confirms they're no longer needed
 
-[![Try in WordPress Playground](https://img.shields.io/badge/Try-Playground-blue)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/sync-storage/main/blueprint.json)
+Both paths validate that the current user can `edit_post` the room's underlying post before touching storage.
 
-Click the badge above for a zero-install browser demo.
+## Rooms
 
-## What It Does
+| Pattern                | Example            |
+| ----------------------- | ------------------ |
+| `postType/{type}:{id}` | `postType/post:42` |
 
-### ✅ Solves
+## PHP API
 
-- **Cache thrashing**: Post meta updates no longer invalidate site-wide caches ([Trac #64696](https://core.trac.wordpress.org/ticket/64696))
-- **Race conditions**: Auto-increment cursor prevents timestamp collision bugs
-- **Compaction safety**: Atomic DELETE prevents message loss during cleanup
-
-### ❌ Does NOT Do
-
-- Replace Gutenberg's HTTP polling provider (stays in Gutenberg)
-- Own REST endpoints (Gutenberg keeps `/wp/v2/sync/updates`)
-- Change editor UI (cursors, avatars, etc. - Gutenberg)
-- Handle WebSocket transport (future separate plugin)
-
-## How It Works
-
-### Awareness (Ephemeral Presence)
+This plugin implements Gutenberg's `WP_Sync_Storage` interface. These are the methods `Sync_Storage_Provider` provides; there's no separate global-function API like Presence API's.
 
 ```php
-// Gutenberg calls:
-$sync_storage->set_awareness_state('postType/post:42', $awareness);
+// Read awareness state for a room, reshaped from Presence API's format.
+$entries = $storage->get_awareness_state( $room );
 
-// We delegate to Presence API:
-wp_set_presence('postType/post:42', $client_id, $state, $user_id);
-// → wp_presence table (60s TTL, zero cache impact)
+// Write each client's awareness state, delegated to wp_set_presence().
+$storage->set_awareness_state( $room, $awareness );
+
+// Append an opaque CRDT update to wp_collaboration.
+$storage->add_update( $room, $update );
+
+// Last update id returned to this request for a room (0 if none yet).
+$cursor = $storage->get_cursor( $room );
+
+// Number of stored updates for a room.
+$count = $storage->get_update_count( $room );
+
+// Updates with id > $cursor, ordered by id.
+$updates = $storage->get_updates_after_cursor( $room, $cursor );
+
+// Delete compacted updates with id < $cursor.
+$storage->remove_updates_before_cursor( $room, $cursor );
 ```
 
-### CRDT Updates (Persistent Sync Log)
-
-```php
-// Gutenberg calls:
-$sync_storage->add_update('postType/post:42', $update);
-
-// We store in dedicated table:
-INSERT INTO wp_collaboration (room, data, timestamp) VALUES (...);
-// → Zero cache invalidation
-```
-
-## Database Schema
+## Database schema
 
 ### `wp_collaboration`
 
-| Column      | Type           | Purpose                          |
-|-------------|----------------|----------------------------------|
-| id          | BIGINT UNSIGNED| Auto-increment cursor for polling|
-| room        | VARCHAR(191)   | Room identifier (e.g., postType/post:42)|
-| type        | VARCHAR(20)    | Reserved for future update classification; unused today (always NULL) |
-| data        | LONGTEXT       | JSON-encoded opaque payload      |
-| timestamp   | BIGINT UNSIGNED| Milliseconds since epoch, matches Yjs. Used by the 7-day cleanup cron |
+| Column    | Type             | Purpose                                                    |
+| --------- | ---------------- | ----------------------------------------------------------- |
+| id        | BIGINT UNSIGNED  | Auto-increment cursor for polling                            |
+| room      | VARCHAR(191)     | Room identifier, e.g. `postType/post:42`                    |
+| type      | VARCHAR(20)      | Reserved for future update classification; always NULL today |
+| data      | LONGTEXT         | JSON-encoded opaque payload                                  |
+| timestamp | BIGINT UNSIGNED  | Milliseconds since epoch, matching Yjs. Used by cleanup      |
 
-**Indexes**:
-- `PRIMARY KEY (id)` - cursor lookups
-- `KEY room_id (room, id)` - polling queries
-- `KEY room_timestamp (room, timestamp)` - cleanup queries
+**Indexes:** `PRIMARY KEY (id)`, `KEY room_id (room, id)` for polling, `KEY room_timestamp (room, timestamp)` for cleanup.
 
-**Cleanup**: Daily cron removes rows older than 7 days.
+A daily cron removes rows older than 7 days.
+
+## Hooks
+
+### `sync_storage_room_active` / `sync_storage_room_inactive`
+Fired when a room's collaborator count crosses the 1-to-2 threshold, as reported by Presence API. Used internally to flag `_sync_storage_active` post meta; also available for third-party integrations.
+```php
+add_action( 'sync_storage_room_active', function ( $post_id, $entries ) {
+    // A second collaborator just joined $post_id.
+}, 10, 2 );
+
+add_action( 'sync_storage_room_inactive', function ( $post_id, $entries ) {
+    // Back down to a single editor (or none).
+}, 10, 2 );
+```
+
+### `__unstable_wp_sync_storage`
+Gutenberg's own filter, hooked by this plugin to replace its default post-meta-backed storage with `Sync_Storage_Provider`. Any plugin can hook this filter to supply a different `WP_Sync_Storage` implementation (Redis, WebSocket-backed, etc.) without patching Gutenberg.
 
 ## Requirements
 
-- **WordPress**: 7.0+ (or 6.7+ with Presence API)
-- **PHP**: 7.4+
-- **Plugins**:
-  - [Presence API](https://wordpress.org/plugins/presence-api/) (from wordpress.org)
-  - [Gutenberg](https://github.com/WordPress/gutenberg) (trunk or 21.x+ with `__unstable_wp_sync_storage` filter)
+- WordPress 7.0+
+- PHP 7.4+
+- [Presence API](https://wordpress.org/plugins/presence-api/)
+- [Gutenberg](https://github.com/WordPress/gutenberg) trunk (or a future release once `__unstable_wp_sync_storage` ships stable)
 
-## Development
+## Maintainers
 
-### Run Tests
+- [@josephfusco](https://github.com/josephfusco)
 
-```bash
-npm run test
-```
+Sponsored by the [Core team](https://make.wordpress.org/core/). Discussion happens in #proj-realtime-collaboration on WordPress Slack and on [Trac #64696](https://core.trac.wordpress.org/ticket/64696).
 
-### Debug Logging
+## Support
 
-All storage operations log to `wp-content/debug.log` when `WP_DEBUG_LOG` is enabled.
-
-**Example log output**:
-```
-[Sync] Plugin loaded {"presence":true,"gutenberg":"21.x"}
-[Sync] Filter hooked: __unstable_wp_sync_storage
-[Sync] Storage initialized
-[Sync] Storage::set_awareness_state() {"room":"postType/post:1","count":1}
-[Sync] Presence::wp_set_presence() {"room":"postType/post:1"}
-[Sync] Storage::add_update() {"room":"postType/post:1"}
-```
-
-### Manual Database Check
-
-```bash
-npm run env:cli -- wp db query "SELECT * FROM wp_collaboration LIMIT 10"
-npm run env:cli -- wp db query "SELECT * FROM wp_presence WHERE room LIKE 'postType/%'"
-```
-
-## Project Status
-
-**Current**: Proof of concept / featured plugin for WordPress 7.2  
-**Target**: Core inclusion in WordPress 8.0
-
-Part of the broader effort to make RTC production-ready:
-- [Gutenberg PR #81697](https://github.com/WordPress/gutenberg/pull/81697) - Added storage filter ✅ Merged
-- [Trac #64696](https://core.trac.wordpress.org/ticket/64696) - Cache invalidation fix
-- This plugin - Storage implementation
-
-## Contributing
-
-This plugin demonstrates the architecture proposed for WordPress 7.2. Feedback welcome via issues or PRs.
-
-### Key Files
-
-- `lib/class-sync-storage-provider.php` - WP_Sync_Storage implementation
-- `lib/gutenberg-integration.php` - Filter hook
-- `lib/install.php` - Table creation
-- `lib/class-sync-storage-logger.php` - Debug logging
+Questions and bug reports: [GitHub Issues](https://github.com/WordPress/sync-storage/issues).
 
 ## License
 
 GPL-2.0-or-later
-
-## Credits
-
-Built to validate the architecture discussed in [Trac #64696](https://core.trac.wordpress.org/ticket/64696).
-
-Integrates with:
-- [Presence API](https://wordpress.org/plugins/presence-api/) by Joe Fusco
-- [Gutenberg](https://github.com/WordPress/gutenberg) RTC experiment
