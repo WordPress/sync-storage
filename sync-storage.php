@@ -5,6 +5,7 @@
  * Version: 0.1.1
  * Requires at least: 7.0
  * Requires PHP: 7.4
+ * Requires Plugins: presence-api, gutenberg
  * Author: WordPress Core Team
  * Author URI: https://make.wordpress.org/core/
  * Text Domain: sync-storage
