@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="Realtime Collaboration Coding Standards">
-	<description>WordPress Coding Standards for the Realtime Collaboration plugin.</description>
+<ruleset name="Sync Storage Coding Standards">
+	<description>WordPress Coding Standards for the Sync Storage plugin.</description>
 
 	<arg name="extensions" value="php"/>
 	<arg name="basepath" value="./"/>
@@ -8,7 +8,7 @@
 	<arg value="ps"/>
 
 	<!-- Scan plugin source files. -->
-	<file>realtime-collaboration.php</file>
+	<file>sync-storage.php</file>
 	<file>lib/</file>
 	<file>uninstall.php</file>
 
@@ -28,7 +28,7 @@
 	<rule ref="PHPCompatibilityWP"/>
 
 	<!-- Verify text domain. -->
-	<config name="text_domain" value="realtime-collaboration"/>
+	<config name="text_domain" value="sync-storage"/>
 
 	<!-- Set minimum supported WP version for deprecated function checks. -->
 	<config name="minimum_wp_version" value="7.0"/>

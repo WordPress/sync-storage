@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-add_action( 'rtc_cleanup_stale_updates', 'sync_storage_cleanup_old_updates' );
+add_action( 'sync_storage_cleanup_stale_updates', 'sync_storage_cleanup_old_updates' );
 
 /**
  * Cleanup old collaboration updates.

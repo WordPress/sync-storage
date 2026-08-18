@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-register_activation_hook( WP_SYNC_STORAGE_PLUGIN_DIR . 'realtime-collaboration.php', 'sync_storage_install' );
+register_activation_hook( WP_SYNC_STORAGE_PLUGIN_DIR . 'sync-storage.php', 'sync_storage_install' );
 
 /**
  * Create wp_collaboration table on activation.
@@ -49,8 +49,8 @@ function sync_storage_install() {
 	update_option( 'sync_storage_db_version', WP_SYNC_STORAGE_DB_VERSION );
 
 	// Schedule cleanup cron.
-	if ( ! wp_next_scheduled( 'rtc_cleanup_stale_updates' ) ) {
-		wp_schedule_event( time(), 'daily', 'rtc_cleanup_stale_updates' );
+	if ( ! wp_next_scheduled( 'sync_storage_cleanup_stale_updates' ) ) {
+		wp_schedule_event( time(), 'daily', 'sync_storage_cleanup_stale_updates' );
 		Sync_Storage_Logger::event( 'Cleanup cron scheduled' );
 	}
 
