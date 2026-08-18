@@ -76,6 +76,21 @@ jobs:
       - name: Start wp-env
         run: npx wp-env start
 
+      # wp-env reporting "started" doesn't mean WordPress is warm: this is a
+      # fresh install on top of a freshly-built Gutenberg trunk, so the first
+      # real request (PHP opcache priming a much larger plugin set than
+      # usual) can be slow enough to blow the first test's REST setup past
+      # its timeout. Pay that cold-start cost here, outside any test timeout,
+      # instead of inside the first test that happens to make a real request.
+      - name: Wait for WordPress to respond
+        run: |
+          for _ in $(seq 1 30); do
+            curl -sf -o /dev/null http://localhost:8888 && exit 0
+            sleep 2
+          done
+          echo "::error::WordPress did not respond after 60s"
+          exit 1
+
       - name: Run Playwright tests
         run: npm run test:e2e
 
