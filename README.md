@@ -11,7 +11,7 @@ The Playground demo installs Gutenberg from the plugin directory, and no tagged 
 
 ## Problem
 
-Gutenberg's real-time collaboration needs somewhere to keep two kinds of data: ephemeral awareness (who's in the room, cursor position) and a persistent log of CRDT updates for each document. Storing either as post meta means every write invalidates post caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin implements Gutenberg's `WP_Sync_Storage` interface to keep both out of post meta entirely: awareness is delegated to [Presence API](https://wordpress.org/plugins/presence-api/)'s `wp_presence` table, and CRDT updates go into a dedicated `wp_collaboration` table.
+Gutenberg's real-time collaboration needs somewhere to keep two kinds of data: ephemeral awareness (who's in the room, cursor position) and a persistent log of CRDT updates for each document. Storing either as post meta means every write invalidates post caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin implements Gutenberg's `WP_Sync_Storage` interface to keep both out of post meta entirely: awareness is delegated to [Presence API](https://wordpress.org/plugins/presence-api/)'s `wp_presence` table, and CRDT updates go into a dedicated `wp_collaboration` table. Dedicated tables, not transients or object cache, so this works the same on shared hosting with no persistent object cache as it does anywhere else.
 
 ## Run locally
 
@@ -133,6 +133,8 @@ Gutenberg's own filter, hooked by this plugin to replace its default post-meta-b
 - [Presence API](https://wordpress.org/plugins/presence-api/)
 
 [Gutenberg](https://github.com/WordPress/gutenberg) trunk (or a future release once `__unstable_wp_sync_storage` ships stable) is what consumes this storage, not what it needs to run. Without it the table, its cleanup and `Sync_Storage_Store` all install and work; the collaboration integration stays unloaded and says so in wp-admin.
+
+No persistent object cache (Redis, Memcached) required, and no WebSocket support required, either from the server or the host. Sync updates poll over regular HTTP through Gutenberg's own sync client, so this runs on shared hosting without any extra infrastructure.
 
 ## Maintainers
 
