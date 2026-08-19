@@ -66,7 +66,7 @@ test.describe('Gutenberg Integration', () => {
 		);
 	});
 
-	test('storage provider handles room creation', async ({ page, admin }) => {
+	test('storage provider handles room creation', async ({ page, admin, editor: editorUtils }) => {
 		// Create a post and open it in the editor
 		const postId = await admin.createNewPost({
 			title: 'Storage Test Post',
@@ -75,26 +75,23 @@ test.describe('Gutenberg Integration', () => {
 
 		await page.waitForSelector('.edit-post-layout', { timeout: 10000 });
 
-		// Make an edit to trigger storage writes
-		const editor = page.locator('[contenteditable="true"]').first();
-		if (await editor.isVisible()) {
-			await editor.click();
-			await editor.pressSequentially(' Updated content.', { delay: 50 });
-			await page.waitForTimeout(1000); // Wait for debounced save
-		}
+		// Make an edit to trigger storage writes. The block canvas renders
+		// inside an iframe for style isolation, so page.locator() alone can
+		// never match its contenteditable regions -- frameLocator() is
+		// required to reach inside it.
+		const editor = page
+			.frameLocator('iframe[name="editor-canvas"]')
+			.locator('[contenteditable="true"]')
+			.first();
+		await editor.waitFor({ state: 'visible', timeout: 10000 });
+		await editor.click();
+		await editor.pressSequentially(' Updated content.', { delay: 50 });
+		await page.waitForTimeout(1000); // Wait for debounced save
 
-		// Save the post
-		await page.keyboard.press('Meta+S');
-		await page.waitForTimeout(1000);
-
-		// Check if collaboration updates were stored
-		// We can't directly query the table from the browser, but we can check logs
-		// or verify the post saved successfully
-		const saveButton = page.locator('button:has-text("Save draft"), button:has-text("Update")').first();
-
-		// If post saved, storage is working
-		const isSaved = await page.locator('.components-snackbar__content').textContent().catch(() => '');
-		// Success indicators vary, but lack of errors is a good sign
-		expect(isSaved).not.toContain('error');
+		// Save the post. editor.saveDraft() clicks the actual "Save draft"
+		// button and waits for the "Draft saved" notice, rather than a
+		// keyboard shortcut whose modifier key (Meta vs Ctrl) is OS-dependent
+		// and doesn't work in this Linux CI environment.
+		await editorUtils.saveDraft();
 	});
 });
