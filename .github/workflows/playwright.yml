@@ -57,14 +57,20 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction
 
+      # Keyed on the resolved Playwright version rather than the whole
+      # lockfile hash, so unrelated dependency bumps don't invalidate a
+      # perfectly good browser cache -- only an actual Playwright version
+      # change should force a re-download.
+      - name: Get installed Playwright version
+        id: playwright-version
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright browsers
         id: cache-playwright
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
       # --with-deps runs apt-get to install OS-level libraries every time,
       # even when the browser binary itself is already cached. Those
