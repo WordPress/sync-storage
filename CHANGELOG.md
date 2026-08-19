@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6](https://github.com/WordPress/sync-storage/compare/v0.1.5...v0.1.6) (2026-08-19)
+
+
+### Bug Fixes
+
+* make playwright.yml workflow_call-only like its CI siblings ([128c911](https://github.com/WordPress/sync-storage/commit/128c911cb59ed5e92f0abbbfaaae29f124860663))
+* make playwright.yml workflow_call-only like its CI siblings ([825fcd6](https://github.com/WordPress/sync-storage/commit/825fcd6a3120491c85b7db13635dd7b68a516045))
+
 ## [0.1.5](https://github.com/WordPress/sync-storage/compare/v0.1.4...v0.1.5) (2026-08-19)
 
 
