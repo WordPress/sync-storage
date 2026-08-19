@@ -3,6 +3,7 @@
  *
  * Utilities for testing multi-user collaborative scenarios in WordPress.
  */
+import { execFileSync } from 'child_process';
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 import { Admin, Editor, PageUtils, RequestUtils } from '@wordpress/e2e-test-utils-playwright';
 
@@ -33,53 +34,56 @@ export interface PresenceEntry {
 	date_gmt: string;
 }
 
-const ADMIN_USERNAME = process.env.WP_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.WP_PASSWORD || 'password';
 const BASE_URL = process.env.WP_BASE_URL || 'http://localhost:8888';
 const COLLABORATOR_PASSWORD = 'sync-storage-e2e-collaborator!1';
 
 /**
+ * Run a `wp` command in the wp-env `cli` container and return its stdout.
+ *
+ * @param args Arguments to pass to `wp`.
+ */
+function wpCli(args: string[]): string {
+	return execFileSync('npx', ['wp-env', 'run', 'cli', 'wp', ...args], {
+		encoding: 'utf-8',
+		stdio: ['ignore', 'pipe', 'ignore'],
+	});
+}
+
+/**
  * Create (or reuse, from a previous run) a distinct editor user for a collaborative session.
  *
- * @param admin    Admin-authenticated RequestUtils, used to provision the collaborator.
+ * Provisioned via WP-CLI rather than the REST API: it runs directly in the
+ * cli container in about a second, instead of paying for a full
+ * login + REST-root-discovery bootstrap against a cold PHP worker for every
+ * collaborator.
+ *
  * @param username Username for the collaborator.
  */
-async function ensureCollaborator(
-	admin: RequestUtils,
-	username: string
-): Promise<{ id: number }> {
+function ensureCollaborator(username: string): { id: number } {
+	let id: number;
 	try {
-		return await admin.createUser({
-			username,
-			email: `${username}@example.test`,
-			password: COLLABORATOR_PASSWORD,
-			roles: ['editor'],
-		});
-	} catch (error) {
-		if ((error as { code?: string })?.code !== 'existing_user_login') {
-			throw error;
-		}
-	}
-
-	const matches: Array<{ id: number; slug: string }> = await admin.rest({
-		path: `/wp/v2/users?search=${encodeURIComponent(username)}&context=edit`,
-	});
-	const existing = matches.find((user) => user.slug === username);
-	if (!existing) {
-		throw new Error(
-			`Collaborator "${username}" already exists but could not be found via search.`
+		id = parseInt(wpCli(['user', 'get', username, '--field=ID']).trim(), 10);
+	} catch {
+		id = parseInt(
+			wpCli([
+				'user',
+				'create',
+				username,
+				`${username}@example.test`,
+				'--role=editor',
+				`--user_pass=${COLLABORATOR_PASSWORD}`,
+				'--porcelain',
+			]).trim(),
+			10
 		);
+		return { id };
 	}
 
 	// Reset the password so this run's login credentials are known, regardless
 	// of what a previous run left behind.
-	await admin.rest({
-		method: 'POST',
-		path: `/wp/v2/users/${existing.id}`,
-		data: { password: COLLABORATOR_PASSWORD },
-	});
+	wpCli(['user', 'update', String(id), `--user_pass=${COLLABORATOR_PASSWORD}`]);
 
-	return { id: existing.id };
+	return { id };
 }
 
 /**
@@ -97,16 +101,11 @@ export async function createCollaborativeSessions(
 	browser: Browser,
 	count: number = 2
 ): Promise<CollaborativeSession[]> {
-	const admin = await RequestUtils.setup({
-		user: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
-		baseURL: BASE_URL,
-	});
-
 	const sessions: CollaborativeSession[] = [];
 
 	for (let i = 0; i < count; i++) {
 		const userName = `sync-storage-editor-${i + 1}`;
-		const { id: userId } = await ensureCollaborator(admin, userName);
+		const { id: userId } = ensureCollaborator(userName);
 
 		const context = await browser.newContext();
 		const requestUtils = new RequestUtils(context.request, {
