@@ -116,7 +116,7 @@ Gutenberg's own filter, hooked by this plugin to replace its default post-meta-b
 
 - [@josephfusco](https://github.com/josephfusco)
 
-Sponsored by the [Core team](https://make.wordpress.org/core/). Discussion happens in #proj-realtime-collaboration on WordPress Slack and on [Trac #64696](https://core.trac.wordpress.org/ticket/64696).
+Sponsored by the [Core team](https://make.wordpress.org/core/). Discussion happens in [#feature-realtime-collaboration](https://wordpress.slack.com/archives/C07NVJ51X6K) on WordPress Slack and on [Trac #64696](https://core.trac.wordpress.org/ticket/64696).
 
 ## Support
 
