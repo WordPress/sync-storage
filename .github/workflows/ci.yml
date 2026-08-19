@@ -14,11 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The single decision point for skipping real work on release-please
+  # branches (version bump + changelog only, nothing worth linting/testing).
+  # gate itself always runs and succeeds -- cheap either way -- so it can't
+  # be the thing left "skipped". It hands its determination to each
+  # downstream job as a workflow_call input; branch protection then sees a
+  # real success/failure conclusion from every required check on every PR,
+  # instead of the "skipped" state it can't distinguish from "never ran".
   gate:
     runs-on: ubuntu-24.04
-    if: ${{ !startsWith(github.head_ref, 'release-please--') && !startsWith(github.ref, 'refs/heads/release-please--') }}
+    outputs:
+      is_release_please: ${{ steps.check.outputs.result }}
     steps:
-      - run: true
+      - id: check
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.ref }}
+        run: |
+          if [[ "$HEAD_REF" == release-please--* || "$BASE_REF" == refs/heads/release-please--* ]]; then
+            echo "result=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=false" >> "$GITHUB_OUTPUT"
+          fi
 
   phpcs:
     needs: gate
@@ -31,12 +48,16 @@ jobs:
   phpunit:
     needs: gate
     uses: ./.github/workflows/phpunit.yml
+    with:
+      skip: ${{ needs.gate.outputs.is_release_please == 'true' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   plugin-check:
     needs: gate
     uses: ./.github/workflows/plugin-check.yml
+    with:
+      skip: ${{ needs.gate.outputs.is_release_please == 'true' }}
 
   typos:
     needs: gate
