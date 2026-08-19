@@ -29,6 +29,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # .env is gitignored (local-only overrides); CI never has one. Without
+      # it, @wordpress/e2e-test-utils-playwright falls back to its own
+      # internal default of localhost:8889 -- the wp-env "tests" environment,
+      # not the "development" one this workflow starts -- for REST root
+      # discovery specifically, causing every REST call to 403 against the
+      # wrong WordPress instance. .env.example is the single committed source
+      # of truth for these values; copy it so CI loads the same defaults as
+      # local dev instead of duplicating them here.
+      - run: cp .env.example .env
+
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
@@ -48,13 +58,22 @@ jobs:
         run: composer install --no-interaction
 
       - name: Cache Playwright browsers
+        id: cache-playwright
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
+      # --with-deps runs apt-get to install OS-level libraries every time,
+      # even when the browser binary itself is already cached. Those
+      # libraries come from the runner image, not the browser version, so
+      # they don't need reinstalling on a cache hit -- skipping apt-get here
+      # avoids depending on the package mirror being fast (or up) on every
+      # single run.
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install ${{ steps.cache-playwright.outputs.cache-hit == 'true' && '' || '--with-deps' }} chromium
 
       # Restores the most recent cached checkout as a starting point, then
       # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
