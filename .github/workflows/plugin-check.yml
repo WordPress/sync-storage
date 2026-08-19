@@ -2,6 +2,10 @@ name: Plugin Check
 
 on:
   workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -11,26 +15,33 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ !inputs.skip }}
         with:
           persist-credentials: false
 
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        if: ${{ !inputs.skip }}
         with:
           php-version: '8.3'
           tools: composer
 
-      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+      - if: ${{ !inputs.skip }}
+        run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: ${{ !inputs.skip }}
         with:
           node-version: 22
 
-      - run: npm install -g @wordpress/env@11.8.1
+      - if: ${{ !inputs.skip }}
+        run: npm install -g @wordpress/env@11.8.1
 
       - name: Authenticate composer to GitHub
+        if: ${{ !inputs.skip }}
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
 
       - name: Build plugin
+        if: ${{ !inputs.skip }}
         run: |
           mkdir -p build/sync-storage
           rsync -a --exclude-from='.distignore' --exclude='build' ./ build/sync-storage/
@@ -45,20 +56,25 @@ jobs:
       # dependency chain just to satisfy an activation check nothing here
       # relies on.
       - name: Drop Requires Plugins header for this isolated scan
+        if: ${{ !inputs.skip }}
         run: sed -i '/^ \* Requires Plugins:/d' build/sync-storage/sync-storage.php
 
       - name: Configure wp-env to mount built plugin
+        if: ${{ !inputs.skip }}
         run: |
           cat > .wp-env.override.json <<'JSON'
           { "plugins": [ "./build/sync-storage" ] }
           JSON
 
-      - run: wp-env start
+      - if: ${{ !inputs.skip }}
+        run: wp-env start
 
       - name: Install Plugin Check
+        if: ${{ !inputs.skip }}
         run: |
           wp-env run cli wp plugin install plugin-check --activate
           wp-env run cli wp plugin activate sync-storage
 
       - name: Run Plugin Check
+        if: ${{ !inputs.skip }}
         run: wp-env run cli wp plugin check sync-storage --format=strict-table

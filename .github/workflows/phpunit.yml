@@ -2,6 +2,10 @@ name: PHPUnit
 
 on:
   workflow_call:
+    inputs:
+      skip:
+        type: boolean
+        default: false
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -22,20 +26,26 @@ jobs:
             coverage: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ !inputs.skip }}
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: ${{ !inputs.skip }}
         with:
           node-version: 22
           cache: npm
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        if: ${{ !inputs.skip }}
         with:
           php-version: ${{ matrix.php }}
           tools: composer
       - run: npm ci
+        if: ${{ !inputs.skip }}
       - name: Authenticate composer to GitHub
+        if: ${{ !inputs.skip }}
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
+        if: ${{ !inputs.skip }}
         run: composer install --no-interaction
       # Restores the most recent cached checkout as a starting point, then
       # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
@@ -43,6 +53,7 @@ jobs:
       # runs on its own isolated runner. Always saves a fresh cache under
       # this run's own key so the restore point keeps rolling forward.
       - name: Cache Gutenberg trunk checkout
+        if: ${{ !inputs.skip }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: gutenberg
@@ -50,12 +61,14 @@ jobs:
           restore-keys: |
             gutenberg-trunk-${{ matrix.php }}-
       - name: Build Gutenberg trunk and start wp-env
+        if: ${{ !inputs.skip }}
         run: bash build-gutenberg.sh && npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
-      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/sync-storage' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
+      - if: ${{ !inputs.skip }}
+        run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/sync-storage' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
       - name: Upload coverage to Codecov
-        if: ${{ matrix.coverage }}
+        if: ${{ !inputs.skip && matrix.coverage }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -65,10 +78,10 @@ jobs:
       # and cleanup behavior. The network provisioning lives in lib/install.php
       # and would show as uncovered without this run.
       - name: Run the suite as multisite
-        if: ${{ matrix.coverage }}
+        if: ${{ !inputs.skip && matrix.coverage }}
         run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/sync-storage' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
       - name: Upload multisite coverage to Codecov
-        if: ${{ matrix.coverage }}
+        if: ${{ !inputs.skip && matrix.coverage }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
