@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sync Storage
  * Description: WP_Sync_Storage implementation for WordPress collaborative editing.
- * Version: 0.1.5
+ * Version: 0.1.6
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Requires Plugins: presence-api, gutenberg
@@ -58,7 +58,7 @@ if ( ! defined( 'GUTENBERG_VERSION' ) ) {
 	return;
 }
 
-define( 'WP_SYNC_STORAGE_VERSION', '0.1.5' );
+define( 'WP_SYNC_STORAGE_VERSION', '0.1.6' );
 define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
 define( 'WP_SYNC_STORAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_SYNC_STORAGE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
