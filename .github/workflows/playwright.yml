@@ -29,6 +29,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # .env is gitignored (local-only overrides); CI never has one. Without
+      # it, @wordpress/e2e-test-utils-playwright falls back to its own
+      # internal default of localhost:8889 -- the wp-env "tests" environment,
+      # not the "development" one this workflow starts -- for REST root
+      # discovery specifically, causing every REST call to 403 against the
+      # wrong WordPress instance. .env.example is the single committed source
+      # of truth for these values; copy it so CI loads the same defaults as
+      # local dev instead of duplicating them here.
+      - run: cp .env.example .env
+
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
