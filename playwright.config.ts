@@ -29,7 +29,13 @@ export default defineConfig({
 	],
 	webServer: {
 		command: 'npm run env:start',
-		url: baseURL,
+		// rest_api_init only fires for requests actually routed through
+		// /wp-json/, unlike a plain homepage request. Pointing the readiness
+		// check here (rather than at baseURL) makes Playwright's own polling
+		// pay for REST route registration once, up front, instead of the
+		// first test that calls RequestUtils.rest() paying it inside its own
+		// 30s test timeout.
+		url: `${baseURL}/wp-json/`,
 		// playwright.yml starts wp-env as its own explicit step before running
 		// tests, in both CI and local dev. Playwright must never try to start
 		// a second instance itself, or it collides on the same port.
