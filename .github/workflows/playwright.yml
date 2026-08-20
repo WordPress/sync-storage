@@ -44,14 +44,20 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction
 
+      # Keyed on the resolved Playwright version rather than the whole
+      # lockfile hash, so unrelated dependency bumps don't invalidate a
+      # perfectly good browser cache -- only an actual Playwright version
+      # change should force a re-download.
+      - name: Get installed Playwright version
+        id: playwright-version
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright browsers
         id: cache-playwright
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
       # --with-deps runs apt-get to install OS-level libraries every time,
       # even when the browser binary itself is already cached. Those
@@ -59,8 +65,20 @@ jobs:
       # they don't need reinstalling on a cache hit -- skipping apt-get here
       # avoids depending on the package mirror being fast (or up) on every
       # single run.
+      #
+      # apt-get has no default timeout, so a stalled mirror hangs silently
+      # until the job's own timeout-minutes kills the whole run (seen live:
+      # a dead archive.ubuntu.com mirror ate a full 30 minutes). Wrapping in
+      # `timeout` bounds each attempt, and retrying once covers a mirror
+      # that's back after a minute rather than failing the run outright.
       - name: Install Playwright browsers
-        run: npx playwright install ${{ steps.cache-playwright.outputs.cache-hit == 'true' && '' || '--with-deps' }} chromium
+        env:
+          CACHE_HIT: ${{ steps.cache-playwright.outputs.cache-hit }}
+        run: |
+          args=()
+          [ "$CACHE_HIT" = "true" ] || args+=(--with-deps)
+          timeout 5m npx playwright install "${args[@]}" chromium || \
+          timeout 5m npx playwright install "${args[@]}" chromium
 
       # Restores the most recent cached checkout as a starting point, then
       # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
