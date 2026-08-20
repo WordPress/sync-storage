@@ -23,6 +23,7 @@ jobs:
   # instead of the "skipped" state it can't distinguish from "never ran".
   gate:
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     outputs:
       is_release_please: ${{ steps.check.outputs.result }}
     steps:
