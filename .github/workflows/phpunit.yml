@@ -17,6 +17,10 @@ jobs:
   phpunit:
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-24.04
+    # Caps the unbounded network work here (Gutenberg clone, npm install,
+    # wp-env image builds), which would otherwise run to GitHub's 360-minute
+    # default -- a stalled mirror has hung this job before.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

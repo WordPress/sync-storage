@@ -30,7 +30,16 @@ echo "🏗️  Building Gutenberg (this takes ~2 minutes)..."
 cd "$GUTENBERG_DIR"
 
 echo "📦 Installing dependencies..."
-npm install --legacy-peer-deps 2>&1 | grep -E "added|removed|changed|^npm" || true
+# grep exits 1 when it matches nothing, so read npm's own status from
+# PIPESTATUS rather than a trailing `|| true` that would swallow both.
+set +e
+npm install --legacy-peer-deps 2>&1 | grep -E "added|removed|changed|^npm"
+npm_status=${PIPESTATUS[0]}
+set -e
+if [ "$npm_status" -ne 0 ]; then
+    echo "❌ npm install failed for Gutenberg trunk (exit $npm_status)" >&2
+    exit "$npm_status"
+fi
 
 echo "🔧 Running build..."
 npm run build 2>&1 | tail -10
