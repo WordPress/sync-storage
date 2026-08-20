@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7](https://github.com/WordPress/sync-storage/compare/v0.1.6...v0.1.7) (2026-08-20)
+
+
+### Bug Fixes
+
+* bound Playwright browser install with a timeout and retry ([dff75ea](https://github.com/WordPress/sync-storage/commit/dff75ea5f5ac9c9ae15e2a04ad672572fc4a3a1d))
+* bound Playwright browser install with a timeout and retry ([d5d235e](https://github.com/WordPress/sync-storage/commit/d5d235e32a544b74da50b8ff4bc0eb6b4ee9a446))
+
 ## [0.1.6](https://github.com/WordPress/sync-storage/compare/v0.1.5...v0.1.6) (2026-08-19)
 
 
