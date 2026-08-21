@@ -20,7 +20,7 @@
 	],
 	"packages": {
 		".": {
-			"package-name": "realtime-collaboration"
+			"package-name": "sync-storage"
 		}
 	}
 }
