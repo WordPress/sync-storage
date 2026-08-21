@@ -36,8 +36,9 @@ function sync_storage_filter_fired( $set = false ) {
 /**
  * Replace Gutenberg's post meta storage with dedicated table storage.
  *
- * Uses wp_collaboration table for both CRDT updates and awareness state,
- * eliminating cache invalidation from post meta storage.
+ * CRDT updates go in the wp_collaboration table. Awareness state is
+ * delegated to the Presence API. Neither touches post meta, so writes
+ * don't invalidate post caches.
  *
  * Filter added in Gutenberg PR #81697.
  */
@@ -66,10 +67,10 @@ add_filter(
  *
  * The rest_api_init hook, where Gutenberg would apply the filter, only fires for
  * requests actually routed to /wp-json/, so an admin page that doesn't
- * happen to make a REST call during its own load can't be trusted to have
- * set $sync_storage_filter_fired by the time admin_notices runs. Dispatching
- * a request directly forces the determination instead of hoping one already
- * happened elsewhere in the same request.
+ * happen to make a REST call during its own load can't rely on
+ * sync_storage_filter_fired() having a result yet by the time admin_notices
+ * runs. Dispatching a request here forces that result instead of hoping one
+ * already happened elsewhere in the same request.
  *
  * @return bool Whether this Gutenberg build supports the filter.
  */
