@@ -9,7 +9,7 @@
 	beStrictAboutOutputDuringTests="true"
 >
 	<testsuites>
-		<testsuite name="realtime-collaboration">
+		<testsuite name="sync-storage">
 			<directory suffix=".php">tests/</directory>
 			<exclude>tests/bootstrap.php</exclude>
 		</testsuite>
@@ -17,7 +17,7 @@
 	<coverage>
 		<include>
 			<directory suffix=".php">lib/</directory>
-			<file>realtime-collaboration.php</file>
+			<file>sync-storage.php</file>
 		</include>
 	</coverage>
 </phpunit>
