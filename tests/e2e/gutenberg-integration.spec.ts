@@ -13,17 +13,16 @@ test.describe('Gutenberg Integration', () => {
 		// Wait for editor to load
 		await page.waitForSelector('.edit-post-layout', { timeout: 10000 });
 
-		// Check debug log for filter hook event
-		// Our filter logs when it's called
+		// Check that wp-admin loads.
 		const response = await page.request.get('/wp-admin/');
 		expect(response.ok()).toBeTruthy();
 
-		// The filter should be applied when REST API routes are registered
-		// Let's check if the collaboration REST endpoints exist
+		// Check that the REST index responds and lists routes. It doesn't
+		// check for any specific route; see the "sync and presence REST
+		// routes are registered" test below for that.
 		const routesResponse = await page.request.get('/wp-json/');
 		const routes = await routesResponse.json();
 
-		// Gutenberg collaboration endpoints should be registered
 		expect(routes.routes).toBeDefined();
 	});
 
@@ -58,9 +57,11 @@ test.describe('Gutenberg Integration', () => {
 		const response = await requestUtils.rest({ path: '/' });
 		const routes = Object.keys(response.routes || {});
 
-		// Actual routes registered by this Gutenberg build (23.8.0-rc.1) and
-		// the Presence API plugin. Earlier versions of this test looked for a
-		// "wp-collaboration" namespace that doesn't exist in this build.
+		// Route names as registered by the current Gutenberg and Presence API
+		// builds. build-gutenberg.sh rebuilds against Gutenberg trunk on every
+		// run, so a trunk rename can break this list. If it fails, check the
+		// current route names first. Earlier versions of this test looked for
+		// a "wp-collaboration" namespace that no longer exists.
 		expect(routes).toEqual(
 			expect.arrayContaining(['/wp-sync/v1/updates', '/wp-presence/v1/presence'])
 		);

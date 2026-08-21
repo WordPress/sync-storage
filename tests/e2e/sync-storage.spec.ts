@@ -8,6 +8,7 @@ import {
 	pollSync,
 	getPresence,
 	postRoom,
+	waitForSyncStorage,
 } from './utils/collaborative';
 
 const test = base.extend({});
@@ -64,6 +65,12 @@ test.describe('Sync Storage - Basic Functionality', () => {
 
 test.describe('Sync Storage - Collaborative Editing', () => {
 	test('multiple users can open the same post', async ({ browser, requestUtils }) => {
+		// Provisioning two collaborator sessions, then waiting for each one's
+		// storage provider to actually start polling (rather than just for the
+		// editor to have a post loaded, which happens much sooner) pushes this
+		// past the default per-test timeout.
+		test.setTimeout(60_000);
+
 		// admin.createNewPost() resolves void, not the post ID (it's meant to
 		// leave you on the editor screen it just opened). requestUtils.createPost()
 		// returns the created post object, which is what post.php?post=<id> needs.
@@ -84,11 +91,8 @@ test.describe('Sync Storage - Collaborative Editing', () => {
 				)
 			);
 
-			// Wait for editors to load
 			for (const { page } of sessions) {
-				await page.waitForFunction(() => {
-					return window.wp?.data?.select('core/editor')?.getCurrentPost() !== null;
-				});
+				await waitForSyncStorage(page);
 			}
 
 			// Both sessions should see the editor.

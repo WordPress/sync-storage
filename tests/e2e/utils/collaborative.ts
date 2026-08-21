@@ -219,14 +219,34 @@ export async function getPresence(
 }
 
 /**
+ * Whether a request URL targets this plugin's sync REST endpoint, in either
+ * pretty-permalink or `?rest_route=` form.
+ *
+ * @param url Request URL.
+ */
+function isSyncUpdateRequest(url: string): boolean {
+	const decodedUrl = decodeURIComponent(url);
+	return (
+		decodedUrl.includes('/wp-json/wp-sync/v1/updates') ||
+		decodedUrl.includes('rest_route=/wp-sync/v1/updates')
+	);
+}
+
+/**
  * Wait for sync storage to be initialized.
+ *
+ * The editor having a post loaded says nothing about whether the storage
+ * provider is wired up yet; Gutenberg's RTC feature polls
+ * `/wp-sync/v1/updates` on an interval (1-4s) once it is, so the first such
+ * request is the actual readiness signal.
  *
  * @param page Playwright page
  */
 export async function waitForSyncStorage(page: Page): Promise<void> {
-	await page.waitForFunction(() => {
-		return window.wp?.data?.select('core/editor')?.getCurrentPost() !== null;
-	});
+	await page.waitForRequest(
+		(request) => request.method() === 'POST' && isSyncUpdateRequest(request.url()),
+		{ timeout: 15000 }
+	);
 }
 
 /**

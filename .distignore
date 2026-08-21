@@ -18,7 +18,6 @@ artifacts
 build
 gutenberg
 blueprint.json
-blueprint-40.json
 CHANGELOG.md
 README.md
 SECURITY.md
@@ -33,5 +32,3 @@ tsconfig.json
 build-gutenberg.sh
 release-please-config.json
 scripts/
-includes/db-viewer.php
-includes/debugger-widget.php

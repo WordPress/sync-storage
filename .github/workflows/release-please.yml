@@ -26,11 +26,12 @@ jobs:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
 
-  # release-please only updates the manifest and CHANGELOG. Every other place
-  # WordPress reads the version verbatim (the plugin header's `* Version:`
-  # line and readme.txt's `Stable tag:`) is synced by scripts/sync-versions.sh.
-  # The script is the same one a maintainer runs locally, so the CI behavior
-  # is grep-able.
+  # release-please only updates the manifest and CHANGELOG. Everywhere else
+  # the version appears (plugin header, WP_SYNC_STORAGE_VERSION constant,
+  # readme.txt Stable tag) is synced by scripts/sync-versions.sh, the same
+  # script a maintainer would run locally. That script also regenerates
+  # readme.txt's Changelog section from the CHANGELOG.md release-please just
+  # wrote, so the WordPress.org listing can't drift behind the releases.
   sync-versions:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr }}
