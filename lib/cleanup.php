@@ -38,7 +38,7 @@ function sync_storage_cleanup_old_updates() {
 		);
 
 		$total_deleted += max( $deleted, 0 );
-	} while ( $deleted === 1000 );
+	} while ( 1000 === $deleted );
 
 	if ( $total_deleted > 0 ) {
 		Sync_Storage_Logger::event(
