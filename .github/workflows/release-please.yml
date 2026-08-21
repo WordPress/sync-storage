@@ -29,7 +29,9 @@ jobs:
   # release-please only updates the manifest and CHANGELOG. Everywhere else
   # the version appears (plugin header, WP_SYNC_STORAGE_VERSION constant,
   # readme.txt Stable tag) is synced by scripts/sync-versions.sh, the same
-  # script a maintainer would run locally.
+  # script a maintainer would run locally. That script also regenerates
+  # readme.txt's Changelog section from the CHANGELOG.md release-please just
+  # wrote, so the WordPress.org listing can't drift behind the releases.
   sync-versions:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr }}
