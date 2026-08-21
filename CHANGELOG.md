@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.8](https://github.com/WordPress/sync-storage/compare/v0.1.7...v0.1.8) (2026-08-21)
+
+
+### Bug Fixes
+
+* bound every CI job with a timeout and stop masking install failures ([3401ef3](https://github.com/WordPress/sync-storage/commit/3401ef325212a7b95683a460016fe8a3dceb06fa))
+* bound every CI job with a timeout and stop masking install failures ([38fff6a](https://github.com/WordPress/sync-storage/commit/38fff6a49198e3992c916edbb439d4a5c155987a))
+
 ## [0.1.7](https://github.com/WordPress/sync-storage/compare/v0.1.6...v0.1.7) (2026-08-20)
 
 
