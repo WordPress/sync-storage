@@ -17,10 +17,9 @@ jobs:
   # The single decision point for skipping real work on release-please
   # branches (version bump + changelog only, nothing worth linting/testing).
   # gate itself always runs and succeeds -- cheap either way -- so it can't
-  # be the thing left "skipped". It hands its determination to each
-  # downstream job as a workflow_call input; branch protection then sees a
-  # real success/failure conclusion from every required check on every PR,
-  # instead of the "skipped" state it can't distinguish from "never ran".
+  # be the thing left "skipped". It passes its result to phpunit and
+  # plugin-check only, as a workflow_call input. phpcs, phpstan, typos and
+  # playwright have no such input and always run in full.
   gate:
     runs-on: ubuntu-24.04
     timeout-minutes: 5

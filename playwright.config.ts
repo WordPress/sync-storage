@@ -36,9 +36,10 @@ export default defineConfig({
 		// first test that calls RequestUtils.rest() paying it inside its own
 		// 30s test timeout.
 		url: `${baseURL}/wp-json/`,
-		// playwright.yml starts wp-env as its own explicit step before running
-		// tests, in both CI and local dev. Playwright must never try to start
-		// a second instance itself, or it collides on the same port.
+		// In CI, playwright.yml already starts wp-env in its own step, so
+		// reuseExistingServer stops this block from starting a second instance
+		// and colliding on the port. Locally, nothing else starts wp-env, so
+		// this block does it.
 		reuseExistingServer: true,
 		timeout: 120_000,
 	},

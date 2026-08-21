@@ -10,7 +10,7 @@ Use [GitHub Security Advisories](https://github.com/WordPress/sync-storage/secur
 
 ## Scope
 
-In scope: the plugin's PHP, JavaScript, CSS, blueprints, and CI workflows in this repository.
+In scope: the plugin's PHP, blueprints, and CI workflows in this repository, and the JavaScript in `tests/e2e/`.
 
 Out of scope: WordPress core itself (report to [HackerOne](https://hackerone.com/wordpress)), hosting-layer issues, and third-party plugins that integrate with the Sync Storage plugin.
 

@@ -12,7 +12,7 @@
 	<file>lib/</file>
 	<file>uninstall.php</file>
 
-	<!-- Exclude test and demo files from coding standards. -->
+	<!-- Exclude test files and dependencies from coding standards. -->
 	<exclude-pattern>tests/</exclude-pattern>
 	<exclude-pattern>vendor/</exclude-pattern>
 	<exclude-pattern>node_modules/</exclude-pattern>

@@ -45,7 +45,9 @@ if ( ! function_exists( 'wp_get_presence' ) ) {
 	return;
 }
 
-// Check for Gutenberg with __unstable_wp_sync_storage filter support.
+// Check for the Gutenberg plugin. Whether it actually calls
+// __unstable_wp_sync_storage is checked separately, in
+// sync_storage_collaboration_filter_supported().
 if ( ! defined( 'GUTENBERG_VERSION' ) ) {
 	add_action(
 		'admin_notices',
