@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Reads the canonical version from .release-please-manifest.json and syncs it
-# to the plugin header Version field.
+# to the plugin header's Version field, the WP_SYNC_STORAGE_VERSION constant,
+# and readme.txt's Stable tag.
 #
 # Called from .github/workflows/release-please.yml after release-please opens
 # (or updates) its release PR. Also runnable locally:

@@ -30,7 +30,8 @@ function _manually_load_plugin() {
 		require dirname( __DIR__ ) . '/gutenberg/gutenberg.php';
 	}
 
-	// Load Presence API dependency (stub if not available)
+	// Load Presence API if present. No stub otherwise: tests that need it
+	// (e.g. test_awareness_state()) check for it and skip themselves.
 	if ( file_exists( dirname( __DIR__, 2 ) . '/presence-api/presence-api.php' ) ) {
 		require dirname( __DIR__, 2 ) . '/presence-api/presence-api.php';
 	}

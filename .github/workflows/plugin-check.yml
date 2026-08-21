@@ -47,15 +47,11 @@ jobs:
           mkdir -p build/sync-storage
           rsync -a --exclude-from='.distignore' --exclude='build' ./ build/sync-storage/
 
-      # This isolated environment only mounts sync-storage, not the Presence
-      # API / Gutenberg dependencies its header declares via "Requires
-      # Plugins". WordPress's dependency resolver refuses to activate a
-      # plugin with unmet dependencies, which crashes wp-env's own
-      # auto-activation on start. Plugin Check doesn't need the plugin
-      # active to scan it, so strip the header from this build-only copy
-      # (never the real plugin file) rather than pull in the full
-      # dependency chain just to satisfy an activation check nothing here
-      # relies on.
+      # This environment only mounts sync-storage, not the Presence API /
+      # Gutenberg it declares via "Requires Plugins". Without those,
+      # wp-env's auto-activation on start would fail before we even reach
+      # the manual activation step below. Strip the header from this
+      # build-only copy (never the real plugin file) to avoid that.
       - name: Drop Requires Plugins header for this isolated scan
         if: ${{ !inputs.skip }}
         run: sed -i '/^ \* Requires Plugins:/d' build/sync-storage/sync-storage.php
