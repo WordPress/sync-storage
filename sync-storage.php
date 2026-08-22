@@ -65,22 +65,36 @@ define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
 define( 'WP_SYNC_STORAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_SYNC_STORAGE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
-/**
- * Registers the collaboration table name on $wpdb.
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/class-sync-storage-logger.php';
+
+/*
+ * The plugin is three layers, and lib/ is laid out to match.
+ *
+ * store/  A room-scoped, append-only, expiring log over wp_collaboration.
+ *         Knows nothing about Gutenberg, Presence API or Yjs, and holds
+ *         every query against the table.
+ * rtc/    The adapter that makes that store Gutenberg's collaborative
+ *         editing backend, plus the awareness delegation to Presence API.
+ * site/   What activating the plugin implies for a site's settings. No
+ *         storage logic.
+ *
+ * Dependencies point one way: rtc/ calls store/, and store/ never calls
+ * back. Anything reaching for $wpdb outside store/ is a layering mistake.
  */
-function wp_sync_storage_register_table() {
-	global $wpdb;
-	$wpdb->collaboration = $wpdb->prefix . 'collaboration';
-	$wpdb->tables[]      = 'collaboration';
-}
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/store/schema.php';
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/store/class-sync-storage-store.php';
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/store/cleanup.php';
+
+// Before anything reads $wpdb->collaboration.
 wp_sync_storage_register_table();
 
-require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/class-sync-storage-logger.php';
-require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/class-sync-storage-provider.php';
-require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/gutenberg-integration.php';
-require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/server-authority.php';
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/rtc/class-sync-storage-provider.php';
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/rtc/integration.php';
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/rtc/server-authority.php';
+
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/site/experiment.php';
+
 require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/install.php';
-require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/cleanup.php';
 require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/migration.php';
 
 Sync_Storage_Logger::event(

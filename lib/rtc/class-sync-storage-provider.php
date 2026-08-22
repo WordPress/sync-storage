@@ -10,8 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Storage implementation that delegates awareness to Presence API
- * and CRDT updates to wp_collaboration table.
+ * Adapts the generic store to Gutenberg's real-time collaboration interface.
+ *
+ * Everything specific to collaborative editing lives here: what a room name
+ * means, who is allowed into one, the shape Gutenberg expects awareness in,
+ * and the cursor bookkeeping its polling loop relies on. CRDT updates are
+ * delegated to Sync_Storage_Store and awareness to Presence API, so neither
+ * touches post meta.
  *
  * Implements WP_Sync_Storage interface from Gutenberg.
  */
@@ -29,15 +34,6 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 	 */
 	public function __construct() {
 		Sync_Storage_Logger::event( 'Storage initialized', array( 'class' => __CLASS__ ) );
-	}
-
-	/**
-	 * Current time in milliseconds, matching the Yjs client's timestamp unit.
-	 *
-	 * @return int Current time in milliseconds.
-	 */
-	public static function current_time_ms(): int {
-		return (int) round( microtime( true ) * 1000 );
 	}
 
 	/**
@@ -166,26 +162,15 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 			return false;
 		}
 
-		global $wpdb;
+		$insert_id = Sync_Storage_Store::append( $room, $update );
+		$success   = false !== $insert_id;
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		$result = $wpdb->insert(
-			$wpdb->collaboration,
-			array(
-				'room'      => $room,
-				'data'      => wp_json_encode( $update ),
-				'timestamp' => self::current_time_ms(),
-			),
-			array( '%s', '%s', '%d' )
-		);
-
-		$success = false !== $result;
 		Sync_Storage_Logger::storage(
 			'add_update:result',
 			$room,
 			array(
 				'success'   => $success,
-				'insert_id' => $success ? $wpdb->insert_id : null,
+				'insert_id' => $success ? $insert_id : null,
 			)
 		);
 
@@ -215,18 +200,7 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 			return 0;
 		}
 
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$count = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->collaboration}
-				 WHERE room = %s AND type IS NULL",
-				$room
-			)
-		);
-
-		return (int) $count;
+		return Sync_Storage_Store::count( $room );
 	}
 
 	/**
@@ -244,36 +218,23 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 			return array();
 		}
 
-		global $wpdb;
+		$entries = Sync_Storage_Store::get_after( $room, $cursor );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$results = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT id, data FROM {$wpdb->collaboration}
-				 WHERE room = %s AND type IS NULL AND id > %d
-				 ORDER BY id ASC",
-				$room,
-				$cursor
-			),
-			ARRAY_A
-		);
-
-		if ( ! $results ) {
+		if ( ! $entries ) {
 			Sync_Storage_Logger::storage( 'get_updates_after_cursor:result', $room, array( 'count' => 0 ) );
 			return array();
 		}
 
 		// Track the last cursor for this room.
-		$last_id                     = end( $results )['id'];
-		$this->room_cursors[ $room ] = (int) $last_id;
+		$last_id                     = end( $entries )['id'];
+		$this->room_cursors[ $room ] = $last_id;
 
-		// Decode and return updates.
 		$updates = array_values(
 			array_map(
-				function ( $row ) {
-					return json_decode( $row['data'], true );
+				function ( $entry ) {
+					return $entry['data'];
 				},
-				$results
+				$entries
 			)
 		);
 
@@ -301,18 +262,6 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 			return false;
 		}
 
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$result = $wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM {$wpdb->collaboration}
-				 WHERE room = %s AND type IS NULL AND id < %d",
-				$room,
-				$cursor
-			)
-		);
-
-		return false !== $result;
+		return Sync_Storage_Store::delete_before( $room, $cursor );
 	}
 }
