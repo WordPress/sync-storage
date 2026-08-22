@@ -1,0 +1,77 @@
+name: Nightly
+
+# Every upstream this plugin depends on moves without a commit in this
+# repository: wp-env resolves `"core": null` to whatever WordPress is current,
+# build-gutenberg.sh fast-forwards to Gutenberg trunk, and Presence API
+# installs from the wp.org "latest" zip. Pull requests only exercise the
+# current stable WordPress, so on a day nobody opens one, an upstream change
+# lands unnoticed and then surfaces as a red build on whichever unrelated pull
+# request happens to come next.
+#
+# This run closes that gap in both directions: it exercises the matrix daily
+# whether or not anyone pushes, and its trunk leg tests the WordPress that has
+# not shipped yet, so a core regression is a failure here rather than a
+# support thread after autoupdates have already moved.
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+# A nightly has no reason to race itself, and cancelling a run midway would
+# report a failure that is an artifact of the cancellation.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  phpunit:
+    name: PHPUnit
+    uses: ./.github/workflows/phpunit.yml
+    permissions:
+      contents: read
+    with:
+      # "7.0" is the floor declared in readme.txt's `Requires at least` and in
+      # phpcs.xml.dist's minimum_wp_version. Running it here is what keeps
+      # those two numbers honest; drop the leg and they become folklore.
+      wp-versions: '[ "latest", "trunk", "7.0" ]'
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  report:
+    name: Report failure
+    needs: phpunit
+    # Only for the scheduled run. A failure from workflow_dispatch already has
+    # someone watching it, and filing an issue at them is noise.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      # A nightly nobody reads is decoration rather than a guard, so a failure
+      # has to reach a human. One issue is reused for as long as the break
+      # lasts: a fortnight of red runs should be one thread accumulating
+      # evidence, not fourteen issues nobody triages.
+      - name: Open or update the tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TITLE: Nightly matrix is failing
+        run: |
+          number=$(gh issue list --state open --search "$TITLE in:title" --limit 1 --json number --jq '.[0].number // empty')
+
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "Failed again: ${RUN_URL}"
+            exit 0
+          fi
+
+          body=$(printf '%s\n\n%s\n' \
+            "The nightly PHPUnit matrix failed: ${RUN_URL}" \
+            "Nothing in this repository changed, so the cause is upstream. Which legs failed narrows it: a trunk-only failure is a WordPress change that has not shipped yet, while a failure on every leg points at Gutenberg trunk or a new Presence API release, which are the same version on all of them.")
+
+          gh issue create --title "$TITLE" --body "$body"
