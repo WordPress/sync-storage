@@ -66,3 +66,30 @@ jobs:
   playwright:
     needs: gate
     uses: ./.github/workflows/playwright.yml
+
+  # The one context branch protection pins. Matrix legs name themselves after
+  # their matrix values ("phpunit / PHP 8.3 / WP latest"), so requiring those
+  # names directly breaks whenever the matrix changes -- the required check
+  # keeps waiting on a name nothing reports anymore.
+  #
+  # if: always() is what makes it report on failure instead of being skipped
+  # along with everything downstream of a failed job, which would leave the
+  # required check stuck in exactly the state this job exists to avoid.
+  ci-status:
+    needs: [ phpcs, phpstan, phpunit, plugin-check, typos, playwright ]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      # Every job above always runs -- the release-please skip is applied per
+      # step, not per job -- so anything other than success is a real problem.
+      - name: Fail unless every job succeeded
+        env:
+          NEEDS: ${{ toJSON( needs ) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          failed=$( jq -r 'to_entries[] | select( .value.result != "success" ) | .key' <<< "$NEEDS" )
+          if [[ -n "$failed" ]]; then
+            echo "::error::Did not succeed: $( echo "$failed" | tr '\n' ' ' )"
+            exit 1
+          fi
