@@ -50,9 +50,6 @@ jobs:
     uses: ./.github/workflows/phpunit.yml
     with:
       skip: ${{ needs.gate.outputs.is_release_please == 'true' }}
-      # TEMPORARY, REVERT BEFORE MERGE: exercises every leg the nightly will
-      # run so this pull request proves the matrix works.
-      wp-versions: '[ "latest", "trunk", "7.0" ]'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
