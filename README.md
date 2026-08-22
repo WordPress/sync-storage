@@ -24,6 +24,23 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 The first run builds Gutenberg from trunk, since the `__unstable_wp_sync_storage` filter this plugin hooks hasn't shipped in a tagged Gutenberg release yet. That takes a few minutes; subsequent runs reuse the build.
 
+## Architecture
+
+`lib/` is three layers, and dependencies point one way — `rtc/` calls `store/`, and `store/` never calls back.
+
+| Directory | Holds | Knows about |
+| --------- | ----- | ----------- |
+| `lib/store/` | The `wp_collaboration` table: schema, every query against it, and the daily expiry sweep. A room-scoped, append-only, expiring log of opaque payloads. | Nothing above it |
+| `lib/rtc/` | The adapter that makes that store Gutenberg's collaborative editing backend: room naming and access rules, cursor bookkeeping, awareness delegated to Presence API. | `store/`, Gutenberg, Presence API |
+| `lib/site/` | What activating the plugin implies for a site's settings. No storage logic. | WordPress options |
+
+Two rules follow from that, and reviews should hold them:
+
+- **`$wpdb` outside `lib/store/` is a layering mistake.** `Sync_Storage_Store` is the only place that touches the table.
+- **`lib/store/` stays free of Gutenberg, Presence API and Yjs vocabulary.** A room is a string and a payload is opaque. `tests/test-store.php` exercises the store with non-post rooms and no capability checks specifically to keep that honest.
+
+The split is internal. These are not separate plugins, and shouldn't be until something other than real-time collaboration actually needs the store.
+
 ## Data flow
 
 **Awareness**

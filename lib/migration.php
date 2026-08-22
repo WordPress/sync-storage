@@ -32,7 +32,6 @@ function sync_storage_migrate_post_meta() {
 		return;
 	}
 
-	global $wpdb;
 	$migrated = 0;
 
 	foreach ( $old_posts as $post ) {
@@ -44,15 +43,10 @@ function sync_storage_migrate_post_meta() {
 		}
 
 		foreach ( $updates as $update ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			$wpdb->insert(
-				$wpdb->collaboration,
-				array(
-					'room'      => $update['room'] ?? '',
-					'data'      => wp_json_encode( $update ),
-					'timestamp' => $update['timestamp'] ?? Sync_Storage_Provider::current_time_ms(),
-				),
-				array( '%s', '%s', '%d' )
+			Sync_Storage_Store::append(
+				$update['room'] ?? '',
+				$update,
+				isset( $update['timestamp'] ) ? (int) $update['timestamp'] : null
 			);
 			++$migrated;
 		}

@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for cron cleanup (lib/cleanup.php).
+ * Tests for cron cleanup (lib/store/cleanup.php).
  *
  * @package Sync_Storage
  *
