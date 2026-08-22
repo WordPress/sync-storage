@@ -5,18 +5,14 @@
 		"php": "8.0",
 		"wp": "latest"
 	},
+	"login": true,
 	"features": {
 		"networking": true
 	},
 	"steps": [
 		{
-			"step": "login",
-			"username": "admin",
-			"password": "password"
-		},
-		{
 			"step": "installPlugin",
-			"pluginZipFile": {
+			"pluginData": {
 				"resource": "wordpress.org/plugins",
 				"slug": "presence-api"
 			},
@@ -26,7 +22,7 @@
 		},
 		{
 			"step": "installPlugin",
-			"pluginZipFile": {
+			"pluginData": {
 				"resource": "wordpress.org/plugins",
 				"slug": "gutenberg"
 			},
@@ -36,9 +32,9 @@
 		},
 		{
 			"step": "installPlugin",
-			"pluginZipFile": {
+			"pluginData": {
 				"resource": "url",
-				"url": "https://github.com/WordPress/sync-storage/archive/main.zip"
+				"url": "https://github.com/WordPress/sync-storage/releases/latest/download/sync-storage.zip"
 			},
 			"options": {
 				"activate": true
@@ -51,14 +47,6 @@
 				"WP_DEBUG_LOG": true,
 				"WP_DEBUG_DISPLAY": false
 			}
-		},
-		{
-			"step": "runPHP",
-			"code": "<?php\n// Create wp_collaboration table\nglobal $wpdb;\n$wpdb->query(\"\n    CREATE TABLE IF NOT EXISTS {$wpdb->prefix}collaboration (\n        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n        room varchar(191) NOT NULL,\n        type varchar(20) DEFAULT NULL,\n        data longtext NOT NULL,\n        timestamp bigint(20) unsigned NOT NULL,\n        PRIMARY KEY (id),\n        UNIQUE KEY room_type (room(191), type),\n        KEY room_id (room(50), id),\n        KEY room_timestamp (room(50), timestamp)\n    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4\n\");\necho 'wp_collaboration table created';"
-		},
-		{
-			"step": "runPHP",
-			"code": "<?php\n// Verify all plugins are active\n$plugins = ['presence-api/presence-api.php', 'gutenberg/gutenberg.php', 'sync-storage/sync-storage.php'];\nforeach ($plugins as $plugin) {\n    if (!is_plugin_active($plugin)) {\n        activate_plugin($plugin);\n    }\n}\necho 'All plugins activated';"
 		}
 	]
 }
