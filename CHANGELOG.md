@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.8](https://github.com/WordPress/sync-storage/compare/v0.1.7...v0.1.8) (2026-08-21)
+
+
+### Bug Fixes
+
+* batch-delete stale updates in a loop so cleanup can catch up ([b27296f](https://github.com/WordPress/sync-storage/commit/b27296fa601279c3a6bdc976af4855a79e7125d4))
+* batch-delete stale updates in a loop so cleanup can catch up ([920644b](https://github.com/WordPress/sync-storage/commit/920644b755c53e0d2df60867ec6a07ea7137739c))
+* bound every CI job with a timeout and stop masking install failures ([3401ef3](https://github.com/WordPress/sync-storage/commit/3401ef325212a7b95683a460016fe8a3dceb06fa))
+* bound every CI job with a timeout and stop masking install failures ([38fff6a](https://github.com/WordPress/sync-storage/commit/38fff6a49198e3992c916edbb439d4a5c155987a))
+* make waitForSyncStorage() actually wait for the storage provider ([3492805](https://github.com/WordPress/sync-storage/commit/3492805a2c956a87b2bb2e0a0c60150f431d98cc))
+* make waitForSyncStorage() actually wait for the storage provider ([8ca2ec5](https://github.com/WordPress/sync-storage/commit/8ca2ec55fee54aef1c4c4a37bacb12a3cea76e06))
+
 ## [0.1.7](https://github.com/WordPress/sync-storage/compare/v0.1.6...v0.1.7) (2026-08-20)
 
 
