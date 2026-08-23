@@ -1,5 +1,5 @@
 === Sync Storage ===
-Contributors: josephfusco
+Contributors: joefusco, iamchitti
 Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1

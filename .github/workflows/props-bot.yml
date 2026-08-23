@@ -1,0 +1,201 @@
+name: Props Bot
+
+on:
+  # This event runs anytime a PR is (re)opened, updated, marked ready for review, or labeled.
+  # GitHub does not allow filtering the `labeled` event by a specific label.
+  # However, the logic below will short-circuit the workflow when the `props-bot` label is not the one being added.
+  # Note: The pull_request_target event is used instead of pull_request because this workflow needs permission to comment
+  # on the pull request. Because this event grants extra permissions to `GITHUB_TOKEN`, any code changes within the PR
+  # should be considered untrusted. See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/.
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - ready_for_review
+  # This event runs anytime a comment is added or deleted.
+  # You cannot filter this event for PR comments only.
+  # However, the logic below does short-circuit the workflow for issues.
+  issue_comment:
+    types:
+      - created
+  # This event will run everytime a new PR review is initially submitted.
+  pull_request_review:
+    types:
+      - submitted
+  # This event runs anytime a PR review comment is created or deleted.
+  pull_request_review_comment:
+    types:
+      - created
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ contains( fromJSON( '["pull_request_target", "pull_request_review", "pull_request_review_comment"]' ), github.event_name ) && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+  # Compiles a list of props for a pull request.
+  #
+  # Performs the following steps:
+  # - Collects a list of contributor props and leaves a comment.
+  # - Removes the props-bot label, if necessary.
+  props-bot:
+    name: Generate a list of props
+    runs-on: ubuntu-24.04
+    permissions:
+      # The action needs permission `write` permission for PRs in order to add a comment.
+      pull-requests: write
+      contents: read
+    timeout-minutes: 20
+    # The job will run when pull requests are open, ready for review and:
+    #
+    # - A comment is added to the pull request.
+    # - A review is created or commented on (unless PR originates from a fork).
+    # - The pull request is opened, synchronized, marked ready for review, or reopened.
+    # - The `props-bot` label is added to the pull request.
+    #
+    # The `props-bot` label is also honoured on a closed pull request. The
+    # comment is a snapshot, and a contributor who links their WordPress.org
+    # account after their own pull request merges has no other way to have it
+    # redrawn. Applying a label needs write access and this job only posts a
+    # comment, so the open-state gate is not carrying security weight there.
+    if: |
+      (
+        github.event_name == 'issue_comment' && github.event.issue.pull_request ||
+        ( contains( fromJSON( '["pull_request_review", "pull_request_review_comment"]' ), github.event_name ) && ! github.event.pull_request.head.repo.fork ) ||
+        github.event_name == 'pull_request_target' && github.event.action != 'labeled' ||
+        'props-bot' == github.event.label.name
+      ) &&
+      (
+        'props-bot' == github.event.label.name ||
+        ! github.event.pull_request.draft && github.event.pull_request.state == 'open' ||
+        ! github.event.issue.draft && github.event.issue.state == 'open'
+      ) &&
+      ! startsWith( github.event.pull_request.head.ref, 'docs/add-' ) &&
+      ! startsWith( github.event.pull_request.head.ref, 'release-please--' )
+
+    steps:
+      - name: Gather a list of contributors
+        uses: WordPress/props-bot-action@trunk # zizmor: ignore[unpinned-uses]
+        with:
+          format: 'svn'
+
+      - name: Sort props and sync the WP.org link label
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
+        with:
+          script: |
+            const LAST = process.env.PROPS_SORT_LAST;
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const propsComment = [...comments.data].reverse()
+              .find(c => c.user.login === 'github-actions[bot]' && c.body.includes('Props '));
+            if (!propsComment) return;
+
+            let body = propsComment.body;
+
+            // Move LAST to end of props list.
+            if (LAST) {
+              body = body.replace(/Props ([^.]+)\./, (_, names) => {
+                const all = names.split(', ').map(n => n.trim());
+                const sorted = [...all.filter(n => n !== LAST), ...all.filter(n => n === LAST)];
+                return 'Props ' + sorted.join(', ') + '.';
+              });
+            }
+
+            // Filter bot accounts and raw email addresses from Unlinked Accounts;
+            // drop the section if nothing real remains.
+            body = body.replace(
+              /## Unlinked Accounts\n\n([\s\S]*?)\n\nCore Committers/,
+              (_, section) => {
+                // Capture to the end of the line rather than to the first period.
+                // `[^.]+` stopped inside email domains and at usernames containing
+                // periods, which made the replace below a silent no-op.
+                const lineMatch = section.match(/accounts: (.+?)\.?\s*$/m);
+                if (!lineMatch) return _;
+                const real = lineMatch[1]
+                  .split(', ')
+                  .map(n => n.trim())
+                  .filter(n => {
+                    if (!n || n.includes('[bot]')) return false;
+                    // Entries arrive "@"-prefixed, so "@someone" is a handle.
+                    // props-bot falls back to the raw commit author email when
+                    // GitHub cannot resolve the account, which leaves a second
+                    // "@" behind. Drop those rather than echo an address.
+                    return !n.replace(/^@/, '').includes('@');
+                  });
+                if (!real.length) return 'Core Committers';
+                return '## Unlinked Accounts\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\nCore Committers';
+              }
+            );
+
+            // Fail-closed backstop. Everything above depends on the exact prose
+            // emitted by WordPress/props-bot-action, which is pinned to @trunk
+            // and can change without notice. If the wording moves, the section
+            // parsing silently no-ops and any raw email survives, which is the
+            // exact failure this workflow already shipped once. Redact address
+            // shaped strings from the whole body regardless of structure.
+            const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
+            const redacted = body.replace(EMAIL, '[redacted]');
+            if (redacted !== body) {
+              body = redacted;
+              core.warning(
+                'A raw email survived section parsing and was redacted by the backstop. ' +
+                'The upstream props-bot comment format has probably changed; ' +
+                'check the Unlinked Accounts parsing in .github/workflows/props-bot.yml.'
+              );
+            }
+
+            if (body !== propsComment.body) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: propsComment.id,
+                body,
+              });
+            }
+
+            // Keep a label in sync with whether anyone here still needs to
+            // link a WordPress.org account, so unlinked PRs are visible
+            // without opening the props comment. This is repo-specific and
+            // not something the upstream props-bot-action does.
+            const LINK_LABEL = 'Needs WP.org Link';
+            const needsLink = body.includes('## Unlinked Accounts');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({ owner, repo, issue_number });
+            const hasLabel = labels.some(l => l.name === LINK_LABEL);
+
+            if (needsLink && !hasLabel) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [LINK_LABEL] });
+            } else if (!needsLink && hasLabel) {
+              await github.rest.issues.removeLabel({ owner, repo, issue_number, name: LINK_LABEL });
+            }
+
+      - name: Remove the props-bot label
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        if: ${{ github.event.action == 'labeled' && 'props-bot' == github.event.label.name }}
+        with:
+          retries: 2
+          retry-exempt-status-codes: 418
+          script: |
+            github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: process.env.ISSUE_NUMBER,
+              name: 'props-bot'
+            });
+        env:
+          ISSUE_NUMBER: ${{ github.event.number }}

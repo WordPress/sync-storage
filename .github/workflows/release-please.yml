@@ -44,6 +44,21 @@ jobs:
           persist-credentials: false
           ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
       - run: bash scripts/sync-versions.sh
+      # Merging a pull request produces two commits carrying the same
+      # conventional prefix -- the branch commit and the merge commit, whose
+      # body GitHub fills with the pull request title -- so release-please
+      # writes every change to CHANGELOG.md twice. See the script header for
+      # why this is cleaned up after the fact rather than prevented.
+      # release-please rewrites this branch on every run, which drops the fix,
+      # so this re-runs alongside it. readme.txt needs no equivalent:
+      # sync-versions.sh already deduplicates the bullets it generates.
+      - run: node .github/scripts/dedupe-changelog.js CHANGELOG.md
+      - name: Sync contributors from release props
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
+        run: node .github/scripts/sync-contributors.js readme.txt
       - name: Commit synced version back to the release PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,11 +66,38 @@ jobs:
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add sync-storage.php readme.txt
-            git commit -m "chore: sync plugin header version"
+            git add sync-storage.php readme.txt CHANGELOG.md
+            git commit -m "chore: sync versions, contributors, and changelog"
             gh auth setup-git
             git push
           fi
+
+  # Aggregate props from every PR merged since the last published release and
+  # post a single sticky comment on the open release PR.
+  #
+  # This runs on every push to main, not only when release-please reports a PR.
+  # release-please reports one only on runs where it touched the PR, so gating
+  # on that output drops anyone who merged after the last touch. The script
+  # finds the open release PR itself when the output is absent.
+  aggregate-props:
+    needs: release-please
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
+          PR_NUMBER: ${{ needs.release-please.outputs.pr && fromJSON(needs.release-please.outputs.pr).number || '' }}
+        with:
+          script: |
+            const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/aggregate-props.js`);
+            await run({ github, context, core });
 
   build-release-asset:
     needs: release-please
