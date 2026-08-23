@@ -25,4 +25,6 @@ jobs:
       - run: composer install --no-interaction
       # `--error-format=github` renders findings as inline PR annotations
       # on the diff, the same shape PHPCS uses via its own GitHub formatter.
-      - run: ./vendor/bin/phpstan analyse --no-progress --error-format=github
+      # --memory-limit matches the `composer phpstan` script. PHPStan's
+      # workers exceed PHP's 128M default once they actually walk the tree.
+      - run: ./vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=2G
