@@ -1,0 +1,15 @@
+# Codecov's default project status is `target: auto`, which fails the check on
+# any drop at all, however small. That is the wrong shape for this repository:
+# it blocked #49, whose entire purpose was to start measuring sync-storage.php.
+# Coverage fell nine points there because the measurement became honest, not
+# because anything regressed.
+#
+# An explicit floor says what is actually meant -- coverage may move around,
+# but it may not fall below this line. Raise the target as the suite grows;
+# `patch` is left at its default so new code still has to be tested.
+coverage:
+  status:
+    project:
+      default:
+        target: 55%
+        threshold: 1%
