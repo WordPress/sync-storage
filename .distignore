@@ -18,6 +18,7 @@ artifacts
 build
 gutenberg
 blueprint.json
+codecov.yml
 CHANGELOG.md
 README.md
 SECURITY.md
