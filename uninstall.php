@@ -20,6 +20,12 @@ delete_option( 'sync_storage_db_version' );
 delete_option( 'sync_storage_migrated_from_post_meta' );
 delete_option( 'sync_storage_filter_check' );
 
+// Rows left by 0.1.7 and earlier, which flagged active rooms in post meta.
+// Nothing writes the key now, and nothing ever read it (#56), but sites that
+// ran an older version can still be holding rows from a session that ended
+// abnormally.
+delete_post_meta_by_key( '_sync_storage_active' );
+
 // Clear scheduled cron.
 wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
 
@@ -36,6 +42,7 @@ if ( is_multisite() ) {
 		delete_option( 'sync_storage_db_version' );
 		delete_option( 'sync_storage_migrated_from_post_meta' );
 		delete_option( 'sync_storage_filter_check' );
+		delete_post_meta_by_key( '_sync_storage_active' );
 		wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
 
 		restore_current_blog();

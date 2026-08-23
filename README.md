@@ -108,7 +108,7 @@ A daily cron removes rows older than 7 days.
 ## Hooks
 
 ### `sync_storage_room_active` / `sync_storage_room_inactive`
-Fired when a room's collaborator count crosses the 1-to-2 threshold, as reported by Presence API. Used internally to flag `_sync_storage_active` post meta; also available for third-party integrations.
+Fired when a room's collaborator count crosses the 1-to-2 threshold, as reported by Presence API. Nothing in the plugin listens; they exist so integrations can react to collaboration starting and stopping.
 ```php
 add_action( 'sync_storage_room_active', function ( $post_id, $entries ) {
     // A second collaborator just joined $post_id.

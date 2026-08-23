@@ -10,7 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * When collaboration starts (1→2 editors), flag RTC as active.
+ * When collaboration starts (1→2 editors), announce the room as active.
+ *
+ * Announcing is all this does. Earlier versions also set `_sync_storage_active`
+ * post meta, which nothing read -- a post cache invalidation on every threshold
+ * crossing, in the one plugin whose reason to exist is avoiding exactly that.
  */
 add_action(
 	'wp_presence_collaboration_started',
@@ -20,20 +24,14 @@ add_action(
 			return;
 		}
 
-		$post_id = (int) $matches[1];
-
-		// Flag that RTC is active for this post.
-		update_post_meta( $post_id, '_sync_storage_active', true );
-
-		// Optionally notify via action.
-		do_action( 'sync_storage_room_active', $post_id, $entries );
+		do_action( 'sync_storage_room_active', (int) $matches[1], $entries );
 	},
 	10,
 	2
 );
 
 /**
- * When collaboration ends (2→1 editors), clear RTC flag.
+ * When collaboration ends (2→1 editors), announce the room as inactive.
  */
 add_action(
 	'wp_presence_collaboration_ended',
@@ -42,12 +40,7 @@ add_action(
 			return;
 		}
 
-		$post_id = (int) $matches[1];
-
-		// Clear RTC flag.
-		delete_post_meta( $post_id, '_sync_storage_active' );
-
-		do_action( 'sync_storage_room_inactive', $post_id, $entries );
+		do_action( 'sync_storage_room_inactive', (int) $matches[1], $entries );
 	},
 	10,
 	2
