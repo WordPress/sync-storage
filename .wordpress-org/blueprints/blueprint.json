@@ -1,6 +1,6 @@
 {
 	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
-	"landingPage": "/wp-admin/index.php",
+	"landingPage": "/wp-admin/post-new.php",
 	"preferredVersions": {
 		"php": "latest",
 		"wp": "latest"
@@ -24,7 +24,17 @@
 			"step": "installPlugin",
 			"pluginData": {
 				"resource": "wordpress.org/plugins",
-				"slug": "realtime-collaboration"
+				"slug": "gutenberg"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "sync-storage"
 			},
 			"options": {
 				"activate": true
