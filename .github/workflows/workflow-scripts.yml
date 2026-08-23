@@ -5,15 +5,35 @@ on:
     branches: [main]
     paths:
       - 'scripts/**'
+      - '.github/scripts/**'
   pull_request:
     paths:
       - 'scripts/**'
+      - '.github/scripts/**'
 
 # Disable permissions for all available scopes by default.
 # Any needed permissions should be configured at the job level.
 permissions: {}
 
 jobs:
+  # The props and changelog helpers under .github/scripts/ ship their own
+  # node:test suites and need no dependencies, so they run straight off the
+  # runner's Node.
+  scripts:
+    name: Run script unit tests
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run tests
+        run: node --test .github/scripts/*.test.js
+
   test:
     name: Test sync-versions.sh
     runs-on: ubuntu-24.04
