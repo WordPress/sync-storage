@@ -1,11 +1,19 @@
 parameters:
 	level: 3
+	# Not sync-storage.php: PHPStan executes bootstrap files, and that one
+	# exits when ABSPATH is undefined, which ends the run before anything is
+	# analysed and still reports success (#57).
 	bootstrapFiles:
-		- sync-storage.php
+		- phpstan/bootstrap.php
 	paths:
 		- sync-storage.php
 		- lib/
 		- uninstall.php
+	# Symbols that exist at runtime but not in vendor/: WordPress constants
+	# the stub package omits, and Gutenberg, which is a plugin dependency
+	# rather than a Composer one.
+	scanDirectories:
+		- phpstan/stubs
 	scanFiles:
 		- vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
 		- vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
