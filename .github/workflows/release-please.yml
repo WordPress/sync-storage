@@ -43,16 +43,19 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
-      - run: bash scripts/sync-versions.sh
       # Merging a pull request produces two commits carrying the same
       # conventional prefix -- the branch commit and the merge commit, whose
       # body GitHub fills with the pull request title -- so release-please
       # writes every change to CHANGELOG.md twice. See the script header for
       # why this is cleaned up after the fact rather than prevented.
       # release-please rewrites this branch on every run, which drops the fix,
-      # so this re-runs alongside it. readme.txt needs no equivalent:
-      # sync-versions.sh already deduplicates the bullets it generates.
+      # so this re-runs alongside it.
+      #
+      # Ordered ahead of sync-versions.sh, which generates readme.txt's
+      # Changelog from CHANGELOG.md: let it read the deduplicated file rather
+      # than lean on its own second layer of deduplication.
       - run: node .github/scripts/dedupe-changelog.js CHANGELOG.md
+      - run: bash scripts/sync-versions.sh
       - name: Sync contributors from release props
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
