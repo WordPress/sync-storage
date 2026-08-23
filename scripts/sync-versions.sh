@@ -82,6 +82,11 @@ trap "rm -f '${GENERATED}'" EXIT
 # commit and the merge commit, which share a subject and differ only in hash. The
 # hash is stripped for readability, which makes those pairs identical, so they're
 # deduplicated by text.
+#
+# Both the commit link and any trailing `closes [#12](url)` clause have to go for
+# that to hold. Stripping only a line-final commit link left entries that close an
+# issue looking different from their twin, so the pair survived deduplication and
+# reached readme.txt with raw Markdown in it, which WordPress.org renders literally.
 awk -v max="${README_CHANGELOG_RELEASES}" '
 	function label(section) {
 		if (section == "Bug Fixes")                return "Fix"
@@ -138,7 +143,10 @@ awk -v max="${README_CHANGELOG_RELEASES}" '
 			next
 		}
 		text = substr($0, 3)
-		sub(/ *\(\[[0-9a-f]+\]\([^)]*\)\) *$/, "", text)
+		# Anchored on the issue link rather than the word alone, so a subject
+		# that happens to contain "closes" keeps its tail.
+		sub(/,? *closes \[#[0-9]+\]\(.*$/, "", text)
+		gsub(/ *\(\[[0-9a-f]+\]\([^)]*\)\)/, "", text)
 		sub(/[ \t\r]+$/, "", text)
 		if (text == "") {
 			next
@@ -160,6 +168,14 @@ awk -v max="${README_CHANGELOG_RELEASES}" '
 
 grep -qFx "= ${VERSION} =" "${GENERATED}" \
 	|| { echo "CHANGELOG.md has no entry for ${VERSION}; run release-please first" >&2; exit 1; }
+
+# readme.txt has no Markdown, so a surviving link means release-please's entry
+# format moved and the stripping above no longer matches it. Fail here rather
+# than commit link syntax into the WordPress.org listing.
+if grep -n '](' "${GENERATED}"; then
+	echo "Generated changelog contains Markdown links; update the stripping rules in scripts/sync-versions.sh" >&2
+	exit 1
+fi
 
 # Replaces everything between `== Changelog ==` and the next `== Section ==`.
 awk -v generated="${GENERATED}" -v url="${CHANGELOG_URL}" '
