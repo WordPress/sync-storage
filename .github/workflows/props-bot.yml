@@ -85,11 +85,12 @@ jobs:
       - name: Gather a list of contributors
         uses: WordPress/props-bot-action@trunk # zizmor: ignore[unpinned-uses]
         with:
-          # Both formats. `git` is the Co-authored-by block to paste into a
-          # merge commit, which is how this repository lands contributions;
-          # `svn` is the `Props ...` line, which the release props comment and
-          # readme.txt's Contributors list are both generated from.
-          format: 'all'
+          # Just the Co-authored-by block to paste into a merge commit, which
+          # is how this repository lands contributions. Nothing here commits to
+          # Core SVN, so the `Props ...` line the `svn` format adds is a second
+          # copy of the same names under a heading nobody acts on; the release
+          # props comment reads the trailers instead.
+          format: 'git'
 
       - name: Sort props and sync the WP.org link label
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -104,23 +105,31 @@ jobs:
               issue_number: context.issue.number,
             });
             const propsComment = [...comments.data].reverse()
-              .find(c => c.user.login === 'github-actions[bot]' && c.body.includes('Props '));
+              .find(c => c.user.login === 'github-actions[bot]' &&
+                (c.body.includes('Co-authored-by: ') || c.body.includes('## Unlinked Accounts')));
             if (!propsComment) return;
 
             let body = propsComment.body;
 
-            // Move LAST to end of props list.
+            // Move LAST to the end of the trailer block. LAST is a
+            // WordPress.org slug, which under `format: git` appears only as the
+            // local part of the synthesised address, not as the display name.
             if (LAST) {
-              body = body.replace(/Props ([^.]+)\./, (_, names) => {
-                const all = names.split(', ').map(n => n.trim());
-                const sorted = [...all.filter(n => n !== LAST), ...all.filter(n => n === LAST)];
-                return 'Props ' + sorted.join(', ') + '.';
-              });
+              const lines = body.split('\n');
+              const start = lines.findIndex(l => l.startsWith('Co-authored-by: '));
+              if (start !== -1) {
+                let end = start;
+                while (lines[end]?.startsWith('Co-authored-by: ')) end++;
+                const block = lines.slice(start, end);
+                const isLast = l => l.includes(`<${LAST}@git.wordpress.org>`);
+                lines.splice(start, block.length, ...block.filter(l => !isLast(l)), ...block.filter(isLast));
+                body = lines.join('\n');
+              }
             }
 
-            // Unlinked contributors are listed twice under `format: all` -- once
-            // in the Unlinked Accounts section, once inside the merge commit
-            // block -- so both lists go through the same filter.
+            // Unlinked contributors are listed twice -- once in the Unlinked
+            // Accounts section, once inside the merge commit block -- so both
+            // lists go through the same filter.
             const keepReal = (list) => list
               .split(',')
               .map(n => n.trim())
@@ -134,11 +143,12 @@ jobs:
               });
 
             // Filter the Unlinked Accounts section, dropping it entirely if
-            // nothing real remains. Anchored on the heading that follows rather
-            // than consuming it, so the section after this one survives whether
-            // it is `## Core SVN` or the bare `Core Committers` line.
+            // nothing real remains. Anchored on whatever follows rather than
+            // consuming it, so the next section survives whether it is the
+            // merge commit block's own preamble, a heading, or the closing
+            // handbook line when this section is the last thing in the comment.
             body = body.replace(
-              /## Unlinked Accounts\n\n([\s\S]*?)\n\n(?=## |Core Committers|\*\*To understand)/,
+              /## Unlinked Accounts\n\n([\s\S]*?)\n\n(?=## |Core Committers|If you're merging|\*\*To understand)/,
               (_, section) => {
                 // Capture to the end of the line rather than to the first period.
                 // `[^.]+` stopped inside email domains and at usernames containing
