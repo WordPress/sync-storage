@@ -60,10 +60,37 @@ add_filter(
 );
 
 /**
+ * Fingerprints the installed Gutenberg build, for use as a cache key.
+ *
+ * GUTENBERG_VERSION on its own can't tell a trunk build from the release it
+ * was branched from: trunk carries the last released number in its plugin
+ * header until the next release bumps it, so trunk and released 23.8.0 both
+ * report 23.8.0. A site that swapped one for the other would keep the cached
+ * answer from the build it replaced. The modification time of the file that
+ * would apply the filter moves with any such swap.
+ *
+ * @return string Version and mtime of Gutenberg's collaboration bootstrap.
+ */
+function sync_storage_gutenberg_build_id() {
+	$mtime = 0;
+
+	if ( function_exists( 'gutenberg_register_collaboration_rest_routes' ) ) {
+		try {
+			$file  = ( new ReflectionFunction( 'gutenberg_register_collaboration_rest_routes' ) )->getFileName();
+			$mtime = $file ? (int) filemtime( $file ) : 0;
+		} catch ( ReflectionException $e ) {
+			$mtime = 0;
+		}
+	}
+
+	return GUTENBERG_VERSION . ':' . $mtime;
+}
+
+/**
  * Determines whether this Gutenberg build actually calls
  * __unstable_wp_sync_storage, caching the result against the installed
- * Gutenberg version so the check reruns whenever that version changes
- * rather than on any arbitrary schedule.
+ * Gutenberg build so the check reruns whenever that build changes rather
+ * than on any arbitrary schedule.
  *
  * The rest_api_init hook, where Gutenberg would apply the filter, only fires for
  * requests actually routed to /wp-json/, so an admin page that doesn't
@@ -75,9 +102,10 @@ add_filter(
  * @return bool Whether this Gutenberg build supports the filter.
  */
 function sync_storage_collaboration_filter_supported() {
-	$cached = get_option( 'sync_storage_filter_check' );
+	$cached   = get_option( 'sync_storage_filter_check' );
+	$build_id = sync_storage_gutenberg_build_id();
 
-	if ( is_array( $cached ) && GUTENBERG_VERSION === ( $cached['gutenberg_version'] ?? null ) ) {
+	if ( is_array( $cached ) && ( $cached['gutenberg_build'] ?? null ) === $build_id ) {
 		return $cached['supported'];
 	}
 
@@ -88,8 +116,8 @@ function sync_storage_collaboration_filter_supported() {
 	update_option(
 		'sync_storage_filter_check',
 		array(
-			'gutenberg_version' => GUTENBERG_VERSION,
-			'supported'         => $supported,
+			'gutenberg_build' => $build_id,
+			'supported'       => $supported,
 		),
 		false
 	);
