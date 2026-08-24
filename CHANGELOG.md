@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.8](https://github.com/WordPress/sync-storage/compare/v0.1.7...v0.1.8) (2026-08-24)
+
+
+### Bug Fixes
+
+* batch-delete stale updates in a loop so cleanup can catch up ([b27296f](https://github.com/WordPress/sync-storage/commit/b27296fa601279c3a6bdc976af4855a79e7125d4))
+* batch-delete stale updates in a loop so cleanup can catch up ([920644b](https://github.com/WordPress/sync-storage/commit/920644b755c53e0d2df60867ec6a07ea7137739c))
+* bound every CI job with a timeout and stop masking install failures ([3401ef3](https://github.com/WordPress/sync-storage/commit/3401ef325212a7b95683a460016fe8a3dceb06fa))
+* bound every CI job with a timeout and stop masking install failures ([38fff6a](https://github.com/WordPress/sync-storage/commit/38fff6a49198e3992c916edbb439d4a5c155987a))
+* fix stale plugin filename in phpunit.xml.dist ([ea3fbec](https://github.com/WordPress/sync-storage/commit/ea3fbec648dafd2ea900255e75dd96b0820e0364))
+* fix stale plugin filename in phpunit.xml.dist ([61c2bb0](https://github.com/WordPress/sync-storage/commit/61c2bb0ba54f9d54b1ca32a308510a9e20ac1929))
+* make PHPStan actually analyse the plugin ([be6fc14](https://github.com/WordPress/sync-storage/commit/be6fc14cbea67e00d4e731868164e46209fb16fd))
+* make PHPStan actually analyse the plugin ([c270efc](https://github.com/WordPress/sync-storage/commit/c270efcfcbf3db53a2128b1ad8f8d66466e9e4a9)), closes [#57](https://github.com/WordPress/sync-storage/issues/57)
+* make the Playground blueprints activate the plugin ([1582453](https://github.com/WordPress/sync-storage/commit/158245348096fd28c32a4fbc7476edf9d2f12743))
+* make the Playground blueprints activate the plugin ([53e6f52](https://github.com/WordPress/sync-storage/commit/53e6f520d4a451ac88db7146efb2d9d2d4028b09))
+* make waitForSyncStorage() actually wait for the storage provider ([3492805](https://github.com/WordPress/sync-storage/commit/3492805a2c956a87b2bb2e0a0c60150f431d98cc))
+* make waitForSyncStorage() actually wait for the storage provider ([8ca2ec5](https://github.com/WordPress/sync-storage/commit/8ca2ec55fee54aef1c4c4a37bacb12a3cea76e06))
+* provision existing sites on network activation ([d0612be](https://github.com/WordPress/sync-storage/commit/d0612beb96ce2f9a373296acca50136427729f9a))
+* provision existing sites on network activation ([100b494](https://github.com/WordPress/sync-storage/commit/100b494f7ff881b789708347c17fe189be2a85c4))
+* stop writing the post meta flag nothing reads ([6355b71](https://github.com/WordPress/sync-storage/commit/6355b71166d1588d1dfc9702a44be0b86205bfa1))
+* stop writing the post meta flag nothing reads ([830a4a0](https://github.com/WordPress/sync-storage/commit/830a4a04d15b5a57606ca83d338a5980da35f0f8)), closes [#56](https://github.com/WordPress/sync-storage/issues/56)
+* strip closes clauses when generating readme.txt's changelog ([78be0b4](https://github.com/WordPress/sync-storage/commit/78be0b491afc38b03db6a8328fe57d8faaea9d1e))
+* strip closes clauses when generating readme.txt's changelog ([198a34b](https://github.com/WordPress/sync-storage/commit/198a34bfc6601a1487d7cadfa71f3d8de23d221f))
+
 ## [0.1.7](https://github.com/WordPress/sync-storage/compare/v0.1.6...v0.1.7) (2026-08-20)
 
 
