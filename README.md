@@ -7,6 +7,8 @@
 
 Storage layer for Gutenberg's real-time collaborative editing.
 
+The Playground demo installs Gutenberg from the plugin directory, and no tagged Gutenberg release carries the `__unstable_wp_sync_storage` filter yet, so it boots all three plugins and warns in wp-admin instead of demonstrating the storage swap. Until that release lands, [run locally](#run-locally) against a trunk build to see the real thing.
+
 ## Problem
 
 Gutenberg's real-time collaboration needs somewhere to keep two kinds of data: ephemeral awareness (who's in the room, cursor position) and a persistent log of CRDT updates for each document. Storing either as post meta means every write invalidates post caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin implements Gutenberg's `WP_Sync_Storage` interface to keep both out of post meta entirely: awareness is delegated to [Presence API](https://wordpress.org/plugins/presence-api/)'s `wp_presence` table, and CRDT updates go into a dedicated `wp_collaboration` table.
