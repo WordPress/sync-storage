@@ -26,7 +26,8 @@ Sync Storage provides storage infrastructure for Gutenberg's real-time collabora
 **Requirements:**
 
 * Presence API plugin
-* Gutenberg with sync storage filter support
+
+The storage itself has no editor requirement. Gutenberg, with sync storage filter support, is what currently consumes it: install it and Sync Storage becomes its real-time collaboration backend, otherwise the table is installed and idle.
 
 **How It Works:**
 
@@ -49,6 +50,10 @@ Yes, this plugin provides the storage layer for Gutenberg's real-time collaborat
 = Do I need the Presence API plugin? =
 
 Yes, Sync Storage requires the Presence API plugin for awareness infrastructure.
+
+= Do I need the Gutenberg plugin? =
+
+Only to use the collaboration feature. Sync Storage installs and runs without it, and picks Gutenberg up whenever it is activated. It is the consumer of this storage, not a dependency of it.
 
 = Does this work on multisite? =
 
