@@ -85,7 +85,11 @@ jobs:
       - name: Gather a list of contributors
         uses: WordPress/props-bot-action@trunk # zizmor: ignore[unpinned-uses]
         with:
-          format: 'svn'
+          # Both formats. `git` is the Co-authored-by block to paste into a
+          # merge commit, which is how this repository lands contributions;
+          # `svn` is the `Props ...` line, which the release props comment and
+          # readme.txt's Contributors list are both generated from.
+          format: 'all'
 
       - name: Sort props and sync the WP.org link label
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -114,31 +118,45 @@ jobs:
               });
             }
 
-            // Filter bot accounts and raw email addresses from Unlinked Accounts;
-            // drop the section if nothing real remains.
+            // Unlinked contributors are listed twice under `format: all` -- once
+            // in the Unlinked Accounts section, once inside the merge commit
+            // block -- so both lists go through the same filter.
+            const keepReal = (list) => list
+              .split(',')
+              .map(n => n.trim())
+              .filter(n => {
+                if (!n || n.includes('[bot]')) return false;
+                // Entries can arrive "@"-prefixed, so "@someone" is a handle.
+                // props-bot falls back to the raw commit author email when
+                // GitHub cannot resolve the account, which leaves a second
+                // "@" behind. Drop those rather than echo an address.
+                return !n.replace(/^@/, '').includes('@');
+              });
+
+            // Filter the Unlinked Accounts section, dropping it entirely if
+            // nothing real remains. Anchored on the heading that follows rather
+            // than consuming it, so the section after this one survives whether
+            // it is `## Core SVN` or the bare `Core Committers` line.
             body = body.replace(
-              /## Unlinked Accounts\n\n([\s\S]*?)\n\nCore Committers/,
+              /## Unlinked Accounts\n\n([\s\S]*?)\n\n(?=## |Core Committers|\*\*To understand)/,
               (_, section) => {
                 // Capture to the end of the line rather than to the first period.
                 // `[^.]+` stopped inside email domains and at usernames containing
                 // periods, which made the replace below a silent no-op.
                 const lineMatch = section.match(/accounts: (.+?)\.?\s*$/m);
                 if (!lineMatch) return _;
-                const real = lineMatch[1]
-                  .split(', ')
-                  .map(n => n.trim())
-                  .filter(n => {
-                    if (!n || n.includes('[bot]')) return false;
-                    // Entries arrive "@"-prefixed, so "@someone" is a handle.
-                    // props-bot falls back to the raw commit author email when
-                    // GitHub cannot resolve the account, which leaves a second
-                    // "@" behind. Drop those rather than echo an address.
-                    return !n.replace(/^@/, '').includes('@');
-                  });
-                if (!real.length) return 'Core Committers';
-                return '## Unlinked Accounts\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\nCore Committers';
+                const real = keepReal(lineMatch[1]);
+                if (!real.length) return '';
+                return '## Unlinked Accounts\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\n';
               }
             );
+
+            // Same filter for the copy inside the merge commit block, which is
+            // pasted verbatim into a commit message.
+            body = body.replace(/Unlinked contributors: (.+?)\.?\n\n/, (_, list) => {
+              const real = keepReal(list);
+              return real.length ? `Unlinked contributors: ${real.join(', ')}.\n\n` : '';
+            });
 
             // Fail-closed backstop. Everything above depends on the exact prose
             // emitted by WordPress/props-bot-action, which is pinned to @trunk
@@ -146,8 +164,12 @@ jobs:
             // parsing silently no-ops and any raw email survives, which is the
             // exact failure this workflow already shipped once. Redact address
             // shaped strings from the whole body regardless of structure.
+            //
+            // Except @git.wordpress.org, which is not a mailbox: props-bot
+            // synthesises those from WordPress.org slugs for the Co-authored-by
+            // trailers, and redacting them would gut the merge commit block.
             const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
-            const redacted = body.replace(EMAIL, '[redacted]');
+            const redacted = body.replace(EMAIL, (m) => m.endsWith('@git.wordpress.org') ? m : '[redacted]');
             if (redacted !== body) {
               body = redacted;
               core.warning(

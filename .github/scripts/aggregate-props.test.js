@@ -57,7 +57,10 @@ function makeEnv(overrides = {}) {
 
 // Reproduces the layout commentProps() emits in WordPress/props-bot-action,
 // including its habit of dropping the SVN block when nobody is linked.
-function propsBotBody({ svn = [], unlinked = [] } = {}) {
+// `coAuthored` switches the fixture to the shape props-bot emits under
+// `format: all` -- the SVN props line gains a `## Core SVN` heading and is
+// followed by a merge commit block of Co-authored-by trailers.
+function propsBotBody({ svn = [], unlinked = [], coAuthored = [] } = {}) {
   let body =
     'The following accounts have interacted with this PR and/or linked issues.' +
     ' I will continue to update these lists as activity occurs. You can also' +
@@ -74,9 +77,27 @@ function propsBotBody({ svn = [], unlinked = [] } = {}) {
   }
 
   if (svn.length > 0) {
+    if (coAuthored.length > 0) {
+      body += '## Core SVN\n\n';
+    }
     body +=
       'Core Committers: Use this line as a base for the props when committing in SVN:\n' +
       '```\nProps ' + svn.join(', ') + '.\n```\n\n';
+  }
+
+  if (coAuthored.length > 0) {
+    body +=
+      '## GitHub Merge commits\n\n' +
+      "If you're merging code through a pull request on GitHub, copy and paste" +
+      ' the following into the bottom of the merge commit message.\n\n```\n';
+
+    if (unlinked.length > 0) {
+      body += 'Unlinked contributors: ' + unlinked.join(', ') + '.\n\n';
+    }
+
+    body +=
+      coAuthored.map((n) => `Co-authored-by: ${n} <${n}@git.wordpress.org>`).join('\n') +
+      '\n```\n\n';
   }
 
   return body;
@@ -126,6 +147,12 @@ test('parsePropsNames: trims whitespace around names', () => {
   assert.deepEqual(parsePropsNames('Props  alice ,  bob .'), ['alice', 'bob']);
 });
 
+test('parsePropsNames: reads the props line out of a format: all body', () => {
+  const body = propsBotBody({ svn: ['alice', 'bob'], coAuthored: ['alice', 'bob'] });
+  assert.ok(body.includes('Co-authored-by: alice <alice@git.wordpress.org>'));
+  assert.deepEqual(parsePropsNames(body), ['alice', 'bob']);
+});
+
 // ---------------------------------------------------------------------------
 // parseUnlinkedLogins
 // ---------------------------------------------------------------------------
@@ -137,6 +164,14 @@ test('parseUnlinkedLogins: extracts the logins, stripping the @ and ignoring the
 
 test('parseUnlinkedLogins: returns empty array when there is no unlinked section', () => {
   assert.deepEqual(parseUnlinkedLogins(propsBotBody({ svn: ['alice'] })), []);
+});
+
+test('parseUnlinkedLogins: reads the section, not the merge commit copy of it', () => {
+  // `format: all` repeats the unlinked names inside the code block as
+  // "Unlinked contributors: ...", which must not be picked up twice.
+  const body = propsBotBody({ svn: ['alice'], unlinked: ['bob-gh'], coAuthored: ['alice'] });
+  assert.ok(body.includes('Unlinked contributors: bob-gh.'));
+  assert.deepEqual(parseUnlinkedLogins(body), ['bob-gh']);
 });
 
 // ---------------------------------------------------------------------------
