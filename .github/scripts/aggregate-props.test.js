@@ -7,6 +7,7 @@ const run = require('./aggregate-props.js');
 const {
   findCutoff,
   parsePropsNames,
+  parseCoAuthoredSlugs,
   parseUnlinkedLogins,
   resolveWPOrgLogins,
   isPropsBotComment,
@@ -56,10 +57,10 @@ function makeEnv(overrides = {}) {
 }
 
 // Reproduces the layout commentProps() emits in WordPress/props-bot-action,
-// including its habit of dropping the SVN block when nobody is linked.
-// `coAuthored` switches the fixture to the shape props-bot emits under
-// `format: all` -- the SVN props line gains a `## Core SVN` heading and is
-// followed by a merge commit block of Co-authored-by trailers.
+// including its habit of dropping a props block when nobody is linked.
+// `coAuthored` alone is what props-bot.yml asks for today (`format: git`);
+// `svn` alone is what pull requests merged before that switch were given, and
+// both together is `format: all`, which adds the two headings.
 function propsBotBody({ svn = [], unlinked = [], coAuthored = [] } = {}) {
   let body =
     'The following accounts have interacted with this PR and/or linked issues.' +
@@ -86,8 +87,10 @@ function propsBotBody({ svn = [], unlinked = [], coAuthored = [] } = {}) {
   }
 
   if (coAuthored.length > 0) {
+    if (svn.length > 0) {
+      body += '## GitHub Merge commits\n\n';
+    }
     body +=
-      '## GitHub Merge commits\n\n' +
       "If you're merging code through a pull request on GitHub, copy and paste" +
       ' the following into the bottom of the merge commit message.\n\n```\n';
 
@@ -154,6 +157,37 @@ test('parsePropsNames: reads the props line out of a format: all body', () => {
 });
 
 // ---------------------------------------------------------------------------
+// parseCoAuthoredSlugs
+// ---------------------------------------------------------------------------
+
+test('parseCoAuthoredSlugs: reads the WordPress.org slug, not the GitHub login', () => {
+  // props-bot names the trailer after the GitHub account and addresses it to
+  // the linked WordPress.org slug, which are routinely different people-facing
+  // handles for the same person. Props go to the slug.
+  const body = propsBotBody({ coAuthored: [] }) +
+    '```\nCo-authored-by: josephfusco <joefusco@git.wordpress.org>\n' +
+    'Co-authored-by: Mamaduka <mamaduka@git.wordpress.org>\n```\n';
+  assert.deepEqual(parseCoAuthoredSlugs(body), ['joefusco', 'mamaduka']);
+});
+
+test('parseCoAuthoredSlugs: ignores trailers addressed anywhere else', () => {
+  const body = 'Co-authored-by: someone <someone@users.noreply.github.com>\n';
+  assert.deepEqual(parseCoAuthoredSlugs(body), []);
+});
+
+test('parseCoAuthoredSlugs: returns empty array when there are no trailers', () => {
+  assert.deepEqual(parseCoAuthoredSlugs(propsBotBody({ svn: ['alice'] })), []);
+});
+
+test('parseCoAuthoredSlugs: is not affected by a previous call', () => {
+  // The regex is module scoped and global, so a leaked lastIndex would make
+  // every other call skip the first trailer.
+  const body = propsBotBody({ coAuthored: ['alice', 'bob'] });
+  assert.deepEqual(parseCoAuthoredSlugs(body), ['alice', 'bob']);
+  assert.deepEqual(parseCoAuthoredSlugs(body), ['alice', 'bob']);
+});
+
+// ---------------------------------------------------------------------------
 // parseUnlinkedLogins
 // ---------------------------------------------------------------------------
 
@@ -177,6 +211,12 @@ test('parseUnlinkedLogins: reads the section, not the merge commit copy of it', 
 // ---------------------------------------------------------------------------
 // isPropsBotComment
 // ---------------------------------------------------------------------------
+
+test('isPropsBotComment: matches a format: git comment, which has no props line', () => {
+  const body = propsBotBody({ coAuthored: ['alice'] });
+  assert.ok(!body.includes('Props '));
+  assert.ok(isPropsBotComment(propsComment(body)));
+});
 
 test('isPropsBotComment: matches a comment that only has an unlinked section', () => {
   // props-bot omits the SVN block when nobody is linked, so there is no
@@ -412,6 +452,39 @@ test('run: applies PROPS_SORT_LAST and deduplicates across PRs', async () => {
 
   const body = github.rest.issues.createComment.mock.calls[0].arguments[0].body;
   assert.ok(body.includes('Props alice, bob, maintainer.'));
+});
+
+test('run: credits contributors from a format: git comment', async () => {
+  const github = buildGithub({
+    prs: [makePR(10, 'feature/foo')],
+    commentsByPR: {
+      10: [propsComment(propsBotBody({ coAuthored: ['alice', 'bob'] }))],
+      [RELEASE_PR]: [],
+    },
+  });
+  const core = { info: () => {}, setFailed: mock.fn() };
+
+  await run({ github, context, core, env: makeEnv() });
+
+  const body = github.rest.issues.createComment.mock.calls[0].arguments[0].body;
+  assert.ok(body.includes('Props alice, bob.'));
+});
+
+test('run: does not credit the same person twice from a format: all comment', async () => {
+  // The SVN line and the trailers are two renderings of one contributor list.
+  const github = buildGithub({
+    prs: [makePR(10, 'feature/foo')],
+    commentsByPR: {
+      10: [propsComment(propsBotBody({ svn: ['alice'], coAuthored: ['alice'] }))],
+      [RELEASE_PR]: [],
+    },
+  });
+  const core = { info: () => {}, setFailed: mock.fn() };
+
+  await run({ github, context, core, env: makeEnv() });
+
+  const body = github.rest.issues.createComment.mock.calls[0].arguments[0].body;
+  assert.ok(body.includes('Props alice.'));
 });
 
 test('run: falls back to the open release PR when PR_NUMBER is absent', async () => {

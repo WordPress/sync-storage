@@ -12,6 +12,12 @@ const WPORG_LOOKUP = 'https://profiles.wordpress.org/wp-json/wporg-github/v1/loo
 // See commentProps() in WordPress/props-bot-action, src/github.js. Logins
 // cannot contain a period, so the sentence ends at the first one.
 const UNLINKED = /^The following contributors have not linked their GitHub and WordPress\.org accounts: ([^.]+)\./m;
+// The merge commit trailers props-bot writes under `format: git`, which is the
+// only place a linked contributor's WordPress.org slug appears in that format.
+// props-bot synthesises the address from the slug, so the local part is the
+// slug: see contributorLists.coAuthored in props-bot-action,
+// src/contribution-collector.js.
+const CO_AUTHORED = /^Co-authored-by: .+ <([^@\s>]+)@git\.wordpress\.org>$/gm;
 
 function findCutoff(releases) {
   return releases
@@ -27,14 +33,22 @@ function parsePropsNames(body) {
   return match[1].split(', ').map(n => n.trim()).filter(Boolean);
 }
 
-// props-bot omits the SVN block entirely when nobody on the pull request is
-// linked yet, so a props comment is not always a comment containing "Props ".
-// Matching only on that would skip exactly the pull requests this recovery
-// exists for: the ones whose only contributor had not linked at merge time.
+// Both shapes of props comment. props-bot.yml asks for `format: git`, whose
+// comments carry Co-authored-by trailers and no "Props " line at all; comments
+// left on pull requests merged while this repository asked for the SVN format
+// are still read back here, and both formats omit their props block entirely
+// when nobody on the pull request is linked yet. Matching only one shape would
+// skip exactly the pull requests the unlinked recovery below exists for.
+function parseCoAuthoredSlugs(body) {
+  return [...body.matchAll(CO_AUTHORED)].map(m => m[1]);
+}
+
 function isPropsBotComment(comment) {
   return (
     comment.user.login === 'github-actions[bot]' &&
-    (comment.body.includes('Props ') || UNLINKED.test(comment.body))
+    (comment.body.includes('Props ') ||
+      comment.body.includes('Co-authored-by: ') ||
+      UNLINKED.test(comment.body))
   );
 }
 
@@ -131,7 +145,10 @@ async function run({ github, context, core, env = process.env, fetchImpl = fetch
     .filter(Boolean)
     .map(c => c.body);
 
-  const propped = propsBodies.flatMap(parsePropsNames);
+  const propped = propsBodies.flatMap(body => [
+    ...parsePropsNames(body),
+    ...parseCoAuthoredSlugs(body),
+  ]);
   const unlinked = [...new Set(propsBodies.flatMap(parseUnlinkedLogins))];
 
   if (propped.length === 0 && unlinked.length === 0) {
@@ -187,6 +204,7 @@ async function run({ github, context, core, env = process.env, fetchImpl = fetch
 module.exports = run;
 module.exports.findCutoff = findCutoff;
 module.exports.parsePropsNames = parsePropsNames;
+module.exports.parseCoAuthoredSlugs = parseCoAuthoredSlugs;
 module.exports.parseUnlinkedLogins = parseUnlinkedLogins;
 module.exports.isPropsBotComment = isPropsBotComment;
 module.exports.resolveWPOrgLogins = resolveWPOrgLogins;
