@@ -95,6 +95,42 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that the notice describes an idle store, not a broken plugin.
+	 */
+	public function test_editor_missing_notice_reports_the_store_as_installed() {
+		ob_start();
+		sync_storage_editor_missing_notice();
+		$notice = ob_get_clean();
+
+		$this->assertStringContainsString( 'notice-warning', $notice );
+		$this->assertStringContainsString( 'installed its collaboration table', $notice );
+	}
+
+	/**
+	 * Test that running the loader again adds no second copy of anything.
+	 *
+	 * plugins_loaded fires once per request, but the loader is a named
+	 * function on a public hook, and the files it pulls in add filters at
+	 * include time.
+	 */
+	public function test_loading_the_integration_again_does_not_duplicate_filters() {
+		if ( ! interface_exists( 'WP_Sync_Storage' ) ) {
+			$this->markTestSkipped( 'No collaborative editing interface in this environment.' );
+		}
+
+		$count = static function () {
+			$callbacks = $GLOBALS['wp_filter']['__unstable_wp_sync_storage'] ?? null;
+
+			return $callbacks ? count( $callbacks->callbacks[10] ) : 0;
+		};
+
+		$before = $count();
+		sync_storage_load_collaboration_integration();
+
+		$this->assertSame( $before, $count() );
+	}
+
+	/**
 	 * Test that the store is usable with no editor involved at all.
 	 */
 	public function test_store_works_without_the_integration() {
