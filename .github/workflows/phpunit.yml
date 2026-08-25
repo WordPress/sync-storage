@@ -77,7 +77,7 @@ jobs:
           path: gutenberg
           key: gutenberg-trunk-${{ github.run_id }}-phpunit
           restore-keys: |
-            gutenberg-trunk-${{ matrix.php }}-
+            gutenberg-trunk-
       # .wp-env.json sets `"core": null`, which wp-env resolves to the current
       # stable release, so the "latest" leg leaves WP_ENV_CORE unset and
       # inherits that. The other legs override it:
