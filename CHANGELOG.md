@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/WordPress/sync-storage/compare/v0.1.8...v0.1.9) (2026-08-25)
+
+
+### Bug Fixes
+
+* key the filter-support cache on the Gutenberg build, not its version ([6c72edc](https://github.com/WordPress/sync-storage/commit/6c72edc484fbe1b569d1d5090792094da6123a68))
+
 ## [0.1.8](https://github.com/WordPress/sync-storage/compare/v0.1.7...v0.1.8) (2026-08-24)
 
 

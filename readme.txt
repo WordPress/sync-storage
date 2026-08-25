@@ -1,10 +1,10 @@
 === Sync Storage ===
-Contributors: joefusco, iamchitti
+Contributors: joefusco, iamchitti, obenland
 Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.8
+Stable tag: 0.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.9 =
+* Fix: key the filter-support cache on the Gutenberg build, not its version
+
 = 0.1.8 =
 * Fix: batch-delete stale updates in a loop so cleanup can catch up
 * Fix: bound every CI job with a timeout and stop masking install failures
@@ -98,9 +101,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Fix: resolve zizmor code-scanning findings
 * Fix: skip apt-get in Playwright browser install on cache hit
 * Fix: warn when Gutenberg build silently skips sync-storage's filter
-
-= 0.1.4 =
-* Fix: stop Playwright from starting a second wp-env instance in CI
-* Fix: stop plugin-check's isolated wp-env from crashing on Requires Plugins
-* Fix: sync all three version copies, not just the plugin header
-* Performance: cache Gutenberg trunk checkout and Playwright browsers in CI
