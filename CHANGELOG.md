@@ -6,7 +6,6 @@
 ### Bug Fixes
 
 * key the filter-support cache on the Gutenberg build, not its version ([6c72edc](https://github.com/WordPress/sync-storage/commit/6c72edc484fbe1b569d1d5090792094da6123a68))
-* key the filter-support cache on the Gutenberg build, not its version ([76fe829](https://github.com/WordPress/sync-storage/commit/76fe829c9d65fa3db73f448c97b48ebf19dde880))
 
 ## [0.1.8](https://github.com/WordPress/sync-storage/compare/v0.1.7...v0.1.8) (2026-08-24)
 
