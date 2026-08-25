@@ -66,21 +66,16 @@ jobs:
         run: composer install --no-interaction
       # Restores the most recent cached checkout as a starting point, then
       # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
-      # commit before building. Keyed per PHP version since each matrix leg
-      # runs on its own isolated runner. Always saves a fresh cache under
-      # this run's own key so the restore point keeps rolling forward.
-      #
-      # The WordPress version is in the save key only. The checkout it
-      # produces does not depend on which WordPress the leg runs against, so
-      # the restore prefix deliberately omits it and lets any leg seed any
-      # other; the save key still has to be unique or legs sharing a PHP
-      # version would race to write the same cache entry.
-      - name: Cache Gutenberg trunk checkout
+      # commit before building. The checkout does not depend on the PHP or
+      # WordPress version a leg runs against, so every leg restores from one
+      # shared family -- including the entries the Playwright workflow saves.
+      # The paired save step below the build rolls the restore point forward.
+      - name: Restore Gutenberg trunk checkout
         if: ${{ !inputs.skip }}
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: gutenberg
-          key: gutenberg-trunk-${{ matrix.php }}-${{ matrix.wp }}-${{ github.run_id }}
+          key: gutenberg-trunk-${{ github.run_id }}-phpunit
           restore-keys: |
             gutenberg-trunk-${{ matrix.php }}-
       # .wp-env.json sets `"core": null`, which wp-env resolves to the current
@@ -112,6 +107,18 @@ jobs:
         run: bash build-gutenberg.sh && npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
+      # The checkout is identical across legs, so saving from each one would
+      # store a ~650 MB near-duplicate per matrix combination every run and
+      # crowd out the repository's 10 GB cache allowance. Only the coverage
+      # leg -- present in every matrix -- saves. The key is unique per run
+      # because cache entries are immutable, and the suffix keeps it from
+      # colliding with the Playwright workflow's save in the same run.
+      - name: Save Gutenberg trunk checkout
+        if: ${{ !inputs.skip && matrix.coverage }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: gutenberg
+          key: gutenberg-trunk-${{ github.run_id }}-phpunit
       - if: ${{ !inputs.skip }}
         run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/sync-storage' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
       - name: Upload coverage to Codecov
