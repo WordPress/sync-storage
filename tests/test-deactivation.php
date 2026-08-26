@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for deactivation teardown (lib/install.php).
+ * Tests for deactivation teardown (lib/deactivate.php).
  *
  * @package Sync_Storage
  *
@@ -30,6 +30,28 @@ class WP_Test_Sync_Storage_Deactivation extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that the teardown loads before anything can stop the plugin file.
+	 *
+	 * A site with the cron still scheduled is a site whose environment already
+	 * broke, so registration below either guard would miss the case the hook
+	 * exists for. Read out of the plugin file because the test environment has
+	 * a working environment by definition and cannot reach that path.
+	 *
+	 * @covers ::sync_storage_deactivate
+	 */
+	public function test_deactivation_is_registered_before_the_guards() {
+		$plugin = file_get_contents( dirname( __DIR__ ) . '/sync-storage.php' );
+		$before = strstr( $plugin, 'global $wp_version;', true );
+
+		$this->assertNotFalse( $before, 'The version guard moved; this test needs rewriting.' );
+		$this->assertStringContainsString(
+			"require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/deactivate.php'",
+			$before,
+			'lib/deactivate.php now loads behind a guard that can return first.'
+		);
+	}
+
+	/**
 	 * @covers ::sync_storage_deactivate_site
 	 */
 	public function test_deactivation_clears_the_cleanup_cron() {
@@ -53,6 +75,21 @@ class WP_Test_Sync_Storage_Deactivation extends WP_UnitTestCase {
 		sync_storage_deactivate();
 
 		$this->assertFalse( wp_next_scheduled( 'sync_storage_cleanup_stale_updates' ) );
+	}
+
+	/**
+	 * wp_clear_scheduled_hook() would key on the empty argument list and
+	 * walk past these.
+	 *
+	 * @covers ::sync_storage_deactivate_site
+	 */
+	public function test_deactivation_clears_events_scheduled_with_arguments() {
+		wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
+		wp_schedule_event( time(), 'daily', 'sync_storage_cleanup_stale_updates', array( 'legacy' ) );
+
+		sync_storage_deactivate();
+
+		$this->assertFalse( wp_next_scheduled( 'sync_storage_cleanup_stale_updates', array( 'legacy' ) ) );
 	}
 
 	/**

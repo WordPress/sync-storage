@@ -27,7 +27,7 @@ delete_option( 'sync_storage_filter_check' );
 delete_post_meta_by_key( '_sync_storage_active' );
 
 // Clear scheduled cron.
-wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
+wp_unschedule_hook( 'sync_storage_cleanup_stale_updates' );
 
 // On multisite, clean up all sites.
 // Note: Limited to 10,000 sites. For larger networks, manually clean via WP-CLI:
@@ -43,7 +43,7 @@ if ( is_multisite() ) {
 		delete_option( 'sync_storage_migrated_from_post_meta' );
 		delete_option( 'sync_storage_filter_check' );
 		delete_post_meta_by_key( '_sync_storage_active' );
-		wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
+		wp_unschedule_hook( 'sync_storage_cleanup_stale_updates' );
 
 		restore_current_blog();
 	}

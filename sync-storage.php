@@ -19,6 +19,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+define( 'WP_SYNC_STORAGE_VERSION', '0.1.9' );
+define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
+define( 'WP_SYNC_STORAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'WP_SYNC_STORAGE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+/*
+ * Above the guards below, and deliberately.
+ *
+ * A deactivation hook only fires if the plugin file registered it before it
+ * stopped loading, and deactivating is how a site recovers once its
+ * environment no longer holds -- Presence API deleted over SFTP, or core
+ * rolled back. Registering the teardown behind a check that the environment
+ * is intact leaves the daily cron scheduled on exactly the sites that most
+ * need it gone. Neither file touches the table or any editor symbol.
+ */
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/class-sync-storage-logger.php';
+require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/deactivate.php';
+
 global $wp_version;
 if ( version_compare( $wp_version, '7.0-alpha', '<' ) ) {
 	add_action(
@@ -46,13 +64,6 @@ if ( ! function_exists( 'wp_get_presence' ) ) {
 	);
 	return;
 }
-
-define( 'WP_SYNC_STORAGE_VERSION', '0.1.9' );
-define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
-define( 'WP_SYNC_STORAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'WP_SYNC_STORAGE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-
-require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/class-sync-storage-logger.php';
 
 /*
  * The plugin is three layers, and lib/ is laid out to match.
