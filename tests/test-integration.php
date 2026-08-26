@@ -15,6 +15,21 @@
 class WP_Test_Sync_Storage_Integration extends WP_UnitTestCase {
 
 	/**
+	 * Skips the class when the deferred loader did not run.
+	 *
+	 * Everything here calls functions from lib/rtc/integration.php, which only
+	 * loads when WP_Sync_Storage is declared. Without the skip the suite fatals
+	 * on an undefined function rather than reporting a skip.
+	 */
+	public function set_up() {
+		parent::set_up();
+
+		if ( ! function_exists( 'sync_storage_gutenberg_build_id' ) ) {
+			$this->markTestSkipped( 'Collaboration integration not loaded.' );
+		}
+	}
+
+	/**
 	 * Test that the build id distinguishes builds sharing a version number.
 	 */
 	public function test_build_id_includes_the_collaboration_file_mtime() {

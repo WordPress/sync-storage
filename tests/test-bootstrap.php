@@ -60,6 +60,63 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that no plugin file reads GUTENBERG_VERSION without defined().
+	 *
+	 * WP_Sync_Storage moves to core with the feature, so declaring it no longer
+	 * implies the Gutenberg plugin is installed. A bare read then throws
+	 * "Undefined constant", and the one place that does it runs on
+	 * admin_notices, which would white-screen every admin page.
+	 *
+	 * Tokenized rather than grepped so the constant's name in a docblock does
+	 * not count as a read.
+	 */
+	public function test_gutenberg_version_is_never_read_unguarded() {
+		$root  = dirname( __DIR__ );
+		$files = new RegexIterator(
+			new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . '/lib' ) ),
+			'/\.php$/'
+		);
+
+		$unguarded = array();
+
+		foreach ( iterator_to_array( $files ) as $file ) {
+			$unguarded = array_merge( $unguarded, $this->unguarded_reads( $file->getPathname() ) );
+		}
+
+		$unguarded = array_merge( $unguarded, $this->unguarded_reads( $root . '/sync-storage.php' ) );
+
+		$this->assertSame( array(), $unguarded );
+	}
+
+	/**
+	 * Finds bare GUTENBERG_VERSION reads in one file.
+	 *
+	 * A read is guarded when defined() appears on its own line, which is what
+	 * both the ternary and the log call in the plugin do. The constant name
+	 * inside defined() is a quoted string, so it never registers as a read.
+	 *
+	 * @param string $path Absolute path to a PHP file.
+	 * @return string[] "file:line" for each unguarded read.
+	 */
+	private function unguarded_reads( $path ) {
+		$source = file_get_contents( $path );
+		$lines  = explode( "\n", $source );
+		$found  = array();
+
+		foreach ( token_get_all( $source ) as $token ) {
+			if ( ! is_array( $token ) || T_STRING !== $token[0] || 'GUTENBERG_VERSION' !== $token[1] ) {
+				continue;
+			}
+
+			if ( false === strpos( $lines[ $token[2] - 1 ], "defined( 'GUTENBERG_VERSION' )" ) ) {
+				$found[] = basename( $path ) . ':' . $token[2];
+			}
+		}
+
+		return $found;
+	}
+
+	/**
 	 * Test that the editor is not declared a hard dependency.
 	 *
 	 * Requires Plugins blocks activation until every plugin listed is active,
