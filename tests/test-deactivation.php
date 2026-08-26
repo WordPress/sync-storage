@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for deactivation teardown (lib/install.php).
+ * Tests for deactivation teardown (lib/deactivate.php).
  *
  * @package Sync_Storage
  *
@@ -27,6 +27,26 @@ class WP_Test_Sync_Storage_Deactivation extends WP_UnitTestCase {
 		$hook = 'deactivate_' . plugin_basename( WP_SYNC_STORAGE_PLUGIN_DIR . 'sync-storage.php' );
 
 		$this->assertNotFalse( has_action( $hook, 'sync_storage_deactivate' ) );
+	}
+
+	/**
+	 * Test that the teardown loads before anything can stop the plugin file.
+	 *
+	 * A site with the cron still scheduled is a site whose environment already
+	 * broke, so registration below either guard would miss the case the hook
+	 * exists for. Read out of the plugin file because the test environment has
+	 * a working environment by definition and cannot reach that path.
+	 */
+	public function test_deactivation_is_registered_before_the_guards() {
+		$plugin = file_get_contents( dirname( __DIR__ ) . '/sync-storage.php' );
+		$before = strstr( $plugin, 'global $wp_version;', true );
+
+		$this->assertNotFalse( $before, 'The version guard moved; this test needs rewriting.' );
+		$this->assertStringContainsString(
+			"require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/deactivate.php'",
+			$before,
+			'lib/deactivate.php now loads behind a guard that can return first.'
+		);
 	}
 
 	/**
