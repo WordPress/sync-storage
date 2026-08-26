@@ -62,13 +62,11 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	/**
 	 * Test that no plugin file reads GUTENBERG_VERSION without defined().
 	 *
-	 * WP_Sync_Storage moves to core with the feature, so declaring it no longer
-	 * implies the Gutenberg plugin is installed. A bare read then throws
-	 * "Undefined constant", and the one place that does it runs on
-	 * admin_notices, which would white-screen every admin page.
+	 * A bare read throws once the interface comes from core instead of the
+	 * plugin, and the one place that did it runs on admin_notices, which
+	 * white-screens every admin page.
 	 *
-	 * Tokenized rather than grepped so the constant's name in a docblock does
-	 * not count as a read.
+	 * Tokenized so the constant's name in a docblock is not counted.
 	 */
 	public function test_gutenberg_version_is_never_read_unguarded() {
 		$root  = dirname( __DIR__ );
@@ -79,7 +77,7 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 
 		$unguarded = array();
 
-		foreach ( iterator_to_array( $files ) as $file ) {
+		foreach ( $files as $file ) {
 			$unguarded = array_merge( $unguarded, $this->unguarded_reads( $file->getPathname() ) );
 		}
 
@@ -91,9 +89,8 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	/**
 	 * Finds bare GUTENBERG_VERSION reads in one file.
 	 *
-	 * A read is guarded when defined() appears on its own line, which is what
-	 * both the ternary and the log call in the plugin do. The constant name
-	 * inside defined() is a quoted string, so it never registers as a read.
+	 * A read counts as guarded when defined() is on the same line. The name
+	 * inside defined() is a quoted string, so it is not itself a read.
 	 *
 	 * @param string $path Absolute path to a PHP file.
 	 * @return string[] "file:line" for each unguarded read.

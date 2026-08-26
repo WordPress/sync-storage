@@ -70,9 +70,8 @@ add_filter(
  * would apply the filter moves with any such swap.
  *
  * The constant is guarded because WP_Sync_Storage moves to core with the
- * feature, so a site can declare the interface with no Gutenberg plugin
- * installed. Core's version stands in there, and the mtime falls to 0, since
- * the file being fingerprinted is Gutenberg's.
+ * feature, so the interface can be declared with no Gutenberg plugin
+ * installed. Core's version stands in, and the mtime falls to 0.
  *
  * @global string $wp_version
  *

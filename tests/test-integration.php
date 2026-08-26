@@ -17,9 +17,7 @@ class WP_Test_Sync_Storage_Integration extends WP_UnitTestCase {
 	/**
 	 * Skips the class when the deferred loader did not run.
 	 *
-	 * Everything here calls functions from lib/rtc/integration.php, which only
-	 * loads when WP_Sync_Storage is declared. Without the skip the suite fatals
-	 * on an undefined function rather than reporting a skip.
+	 * Without it the suite fatals on an undefined function instead of skipping.
 	 */
 	public function set_up() {
 		parent::set_up();
