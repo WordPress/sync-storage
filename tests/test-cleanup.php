@@ -28,7 +28,9 @@ class WP_Test_Sync_Storage_Cleanup extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::sync_storage_cleanup_old_updates
+	 * Asserts on registration, so it executes nothing in lib/.
+	 *
+	 * @coversNothing
 	 */
 	public function test_cleanup_hook_is_registered() {
 		$this->assertTrue( has_action( self::HOOK, 'sync_storage_cleanup_old_updates' ) !== false );

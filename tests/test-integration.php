@@ -15,7 +15,22 @@
 class WP_Test_Sync_Storage_Integration extends WP_UnitTestCase {
 
 	/**
+	 * Skips the class when the deferred loader did not run.
+	 *
+	 * Without it the suite fatals on an undefined function instead of skipping.
+	 */
+	public function set_up() {
+		parent::set_up();
+
+		if ( ! function_exists( 'sync_storage_gutenberg_build_id' ) ) {
+			$this->markTestSkipped( 'Collaboration integration not loaded.' );
+		}
+	}
+
+	/**
 	 * Test that the build id distinguishes builds sharing a version number.
+	 *
+	 * @covers ::sync_storage_gutenberg_build_id
 	 */
 	public function test_build_id_includes_the_collaboration_file_mtime() {
 		if ( ! function_exists( 'gutenberg_register_collaboration_rest_routes' ) ) {
@@ -36,6 +51,8 @@ class WP_Test_Sync_Storage_Integration extends WP_UnitTestCase {
 	 * Trunk keeps the last released version number in its plugin header, so
 	 * swapping a released build for a trunk build of the same version has to
 	 * invalidate this cache on something other than GUTENBERG_VERSION.
+	 *
+	 * @covers ::sync_storage_collaboration_filter_supported
 	 */
 	public function test_cache_from_another_build_is_ignored() {
 		update_option(
@@ -60,6 +77,8 @@ class WP_Test_Sync_Storage_Integration extends WP_UnitTestCase {
 
 	/**
 	 * Test that a cache entry written by an earlier version is rechecked.
+	 *
+	 * @covers ::sync_storage_collaboration_filter_supported
 	 */
 	public function test_cache_in_the_pre_build_id_format_is_ignored() {
 		update_option(
@@ -78,6 +97,8 @@ class WP_Test_Sync_Storage_Integration extends WP_UnitTestCase {
 
 	/**
 	 * Test that a cache entry for this build is reused.
+	 *
+	 * @covers ::sync_storage_collaboration_filter_supported
 	 */
 	public function test_cache_for_this_build_is_reused() {
 		// A value the live check could not produce: if it comes back, it came

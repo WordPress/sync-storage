@@ -69,9 +69,17 @@ add_filter(
  * answer from the build it replaced. The modification time of the file that
  * would apply the filter moves with any such swap.
  *
- * @return string Version and mtime of Gutenberg's collaboration bootstrap.
+ * The constant is guarded because WP_Sync_Storage moves to core with the
+ * feature, so the interface can be declared with no Gutenberg plugin
+ * installed. Core's version stands in, and the mtime falls to 0.
+ *
+ * @global string $wp_version
+ *
+ * @return string Version and mtime of the collaboration bootstrap.
  */
 function sync_storage_gutenberg_build_id() {
+	global $wp_version;
+
 	$mtime = 0;
 
 	if ( function_exists( 'gutenberg_register_collaboration_rest_routes' ) ) {
@@ -83,7 +91,9 @@ function sync_storage_gutenberg_build_id() {
 		}
 	}
 
-	return GUTENBERG_VERSION . ':' . $mtime;
+	$version = defined( 'GUTENBERG_VERSION' ) ? GUTENBERG_VERSION : 'core-' . $wp_version;
+
+	return $version . ':' . $mtime;
 }
 
 /**

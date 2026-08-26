@@ -18,7 +18,9 @@ class WP_Test_Sync_Storage_Install extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::sync_storage_install_new_site
+	 * Asserts on registration, so it executes nothing in lib/.
+	 *
+	 * @coversNothing
 	 */
 	public function test_uses_wp_initialize_site_not_deprecated_hook() {
 		$this->assertNotFalse( has_action( 'wp_initialize_site', 'sync_storage_install_new_site' ) );
