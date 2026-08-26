@@ -118,6 +118,68 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that nothing loaded unconditionally calls into Presence API.
+	 *
+	 * The guard below only notices now, so an unguarded Presence call in any
+	 * of these files is a fatal error rather than an admin notice. The
+	 * listeners in rtc/server-authority.php name Presence actions but call
+	 * nothing, which is why this matches a call and not the prefix.
+	 *
+	 * @coversNothing
+	 */
+	public function test_unconditionally_loaded_files_call_no_presence_functions() {
+		$dir = dirname( __DIR__ ) . '/';
+
+		foreach ( $this->unconditional_requires() as $file ) {
+			$this->assertDoesNotMatchRegularExpression(
+				'/\bwp_(get|set|delete)_presence\s*\(/',
+				file_get_contents( $dir . $file ),
+				"{$file} loads whether or not Presence API is active, so it cannot call it."
+			);
+		}
+	}
+
+	/**
+	 * Test that a missing Presence API does not unload the store.
+	 *
+	 * Presence supplies awareness and nothing else, and every call into it is
+	 * guarded at its call site. Returning from this guard would take the
+	 * table, its cleanup and its migrations down with a dependency none of
+	 * them use. Read out of the plugin file because the test environment has
+	 * Presence loaded by definition and cannot reach that path.
+	 *
+	 * @coversNothing
+	 */
+	public function test_missing_presence_api_does_not_stop_the_load() {
+		$plugin = file_get_contents( dirname( __DIR__ ) . '/sync-storage.php' );
+		$guard  = strstr( $plugin, "if ( ! function_exists( 'wp_get_presence' ) ) {" );
+
+		$this->assertNotFalse( $guard, 'The Presence guard moved; this test needs rewriting.' );
+
+		$body = substr( $guard, 0, strpos( $guard, "\n}\n" ) );
+
+		$this->assertStringNotContainsString(
+			'return',
+			$body,
+			'The Presence guard returns, so the store no longer loads without Presence API.'
+		);
+	}
+
+	/**
+	 * Test that the notice describes lost awareness, not a broken store.
+	 *
+	 * @covers ::sync_storage_presence_missing_notice
+	 */
+	public function test_presence_missing_notice_reports_the_store_as_unaffected() {
+		ob_start();
+		sync_storage_presence_missing_notice();
+		$notice = ob_get_clean();
+
+		$this->assertStringContainsString( 'notice-warning', $notice );
+		$this->assertStringContainsString( 'table is unaffected', $notice );
+	}
+
+	/**
 	 * Test that the editor is not declared a hard dependency.
 	 *
 	 * Requires Plugins blocks activation until every plugin listed is active,

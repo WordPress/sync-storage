@@ -50,19 +50,17 @@ if ( version_compare( $wp_version, '7.0-alpha', '<' ) ) {
 	return;
 }
 
-// Presence API is the one hard dependency, declared in Requires Plugins
-// above, which is also why this can be checked at file scope: WordPress
-// loads a declared dependency before the plugin that declares it.
+/*
+ * Notices, and does not return.
+ *
+ * Presence API supplies awareness -- who else is in a room and where their
+ * cursor is -- and nothing else. Requires Plugins above means activation needs
+ * it, but a site can lose it afterwards, and every call into it is already
+ * guarded at its call site. Returning here would take the table, its cleanup
+ * and its migrations down with a dependency none of them use.
+ */
 if ( ! function_exists( 'wp_get_presence' ) ) {
-	add_action(
-		'admin_notices',
-		function () {
-			echo '<div class="notice notice-error"><p>';
-			echo esc_html__( 'Sync Storage requires the Presence API plugin.', 'sync-storage' );
-			echo '</p></div>';
-		}
-	);
-	return;
+	add_action( 'admin_notices', 'sync_storage_presence_missing_notice' );
 }
 
 /*
@@ -95,8 +93,9 @@ wp_sync_storage_register_table();
 require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/install.php';
 require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/migration.php';
 
-// Presence API's collaboration threshold events. No Gutenberg symbols, so
-// this listens whether or not an editor is installed.
+// Presence API's collaboration threshold events. No Gutenberg symbols and no
+// Presence calls, only listeners, so this loads whether or not either is
+// installed; the actions simply never fire.
 require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/rtc/server-authority.php';
 
 Sync_Storage_Logger::event(
@@ -141,6 +140,22 @@ function sync_storage_load_collaboration_integration() {
 	);
 }
 add_action( 'plugins_loaded', 'sync_storage_load_collaboration_integration' );
+
+/**
+ * Reports that awareness is unavailable, not that the store is broken.
+ *
+ * A warning rather than an error for the same reason the guard above does not
+ * return: the table and its cleanup are still working, and collaborative edits
+ * still sync. What is missing is seeing who else is in the room.
+ */
+function sync_storage_presence_missing_notice() {
+	echo '<div class="notice notice-warning"><p>';
+	echo esc_html__(
+		'Sync Storage cannot show who else is editing a post, because the Presence API plugin is not active. Collaborative edits still sync, and the collaboration table is unaffected.',
+		'sync-storage'
+	);
+	echo '</p></div>';
+}
 
 /**
  * Reports that the storage is installed but nothing is consuming it.
