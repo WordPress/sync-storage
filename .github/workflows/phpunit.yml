@@ -32,7 +32,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: [ '7.4', '8.3' ]
+        # 7.4 is the `Requires PHP` floor and 8.5 the current release, so a
+        # deprecation at either end of the supported range fails a leg rather
+        # than reaching a site. 8.3 and 8.4 cover the middle.
+        php: [ '7.4', '8.3', '8.4', '8.5' ]
         wp: ${{ fromJSON( inputs.wp-versions ) }}
         # Coverage is a property of one leg, not a dimension: running it on
         # every combination would upload near-identical reports and add Xdebug
