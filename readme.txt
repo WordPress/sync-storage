@@ -4,7 +4,7 @@ Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.9
+Stable tag: 0.1.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,13 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.10 =
+* Fix: clear the cleanup cron when the plugin is deactivated
+* Fix: guard GUTENBERG_VERSION in the build id
+* Fix: register the deactivation hook above the dependency guards
+* Fix: scope the Presence API guard to the features that need it
+* Fix: strip PR links from the generated readme.txt changelog
+
 = 0.1.9 =
 * Fix: key the filter-support cache on the Gutenberg build, not its version
 
@@ -88,16 +95,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.1.6 =
 * Fix: make playwright.yml workflow_call-only like its CI siblings
-
-= 0.1.5 =
-* Fix: activate Gutenberg's real-time-collaboration experiment on plugin load
-* Fix: give CI a .env so REST discovery hits the right wp-env port
-* Fix: give collaborative Playwright tests enough time on CI
-* Fix: give release-please branches a real success, not skipped, on required checks
-* Fix: point Playwright readiness check at /wp-json/ to warm REST routes
-* Fix: provision e2e collaborator users via WP-CLI instead of REST
-* Fix: reach the editor canvas iframe in the room-creation e2e test
-* Fix: remove global-setup REST warm-up that hung CI for 30 minutes
-* Fix: resolve zizmor code-scanning findings
-* Fix: skip apt-get in Playwright browser install on cache hit
-* Fix: warn when Gutenberg build silently skips sync-storage's filter
