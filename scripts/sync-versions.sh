@@ -83,10 +83,13 @@ trap "rm -f '${GENERATED}'" EXIT
 # hash is stripped for readability, which makes those pairs identical, so they're
 # deduplicated by text.
 #
-# Both the commit link and any trailing `closes [#12](url)` clause have to go for
-# that to hold. Stripping only a line-final commit link left entries that close an
+# Both the trailing links and any `closes [#12](url)` clause have to go for that
+# to hold. Stripping only a line-final commit link left entries that close an
 # issue looking different from their twin, so the pair survived deduplication and
 # reached readme.txt with raw Markdown in it, which WordPress.org renders literally.
+#
+# A squash-merged commit ends in `(#12)`, which release-please renders as a PR
+# link alongside the commit link, so the link text is not always a hash.
 awk -v max="${README_CHANGELOG_RELEASES}" '
 	function label(section) {
 		if (section == "Bug Fixes")                return "Fix"
@@ -146,7 +149,7 @@ awk -v max="${README_CHANGELOG_RELEASES}" '
 		# Anchored on the issue link rather than the word alone, so a subject
 		# that happens to contain "closes" keeps its tail.
 		sub(/,? *closes \[#[0-9]+\]\(.*$/, "", text)
-		gsub(/ *\(\[[0-9a-f]+\]\([^)]*\)\)/, "", text)
+		gsub(/ *\(\[[^]]+\]\([^)]*\)\)/, "", text)
 		sub(/[ \t\r]+$/, "", text)
 		if (text == "") {
 			next
