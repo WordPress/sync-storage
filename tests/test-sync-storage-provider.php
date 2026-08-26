@@ -46,6 +46,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test adding update to collaboration table.
+	 *
+	 * @covers Sync_Storage_Provider::add_update
 	 */
 	public function test_add_update() {
 		$update = array( 'data' => 'test update' );
@@ -67,6 +69,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test adding update without permission.
+	 *
+	 * @covers Sync_Storage_Provider::add_update
 	 */
 	public function test_add_update_no_permission() {
 		wp_set_current_user( 0 );
@@ -79,6 +83,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test getting updates after cursor.
+	 *
+	 * @covers Sync_Storage_Provider::get_updates_after_cursor
 	 */
 	public function test_get_updates_after_cursor() {
 		$update1 = array( 'data' => 'first' );
@@ -96,6 +102,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test cursor advances.
+	 *
+	 * @covers Sync_Storage_Provider::get_cursor
 	 */
 	public function test_cursor_advances() {
 		$this->provider->add_update( $this->room, array( 'data' => 'first' ) );
@@ -115,6 +123,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test update count.
+	 *
+	 * @covers Sync_Storage_Provider::get_update_count
 	 */
 	public function test_get_update_count() {
 		$this->assertEquals( 0, $this->provider->get_update_count( $this->room ) );
@@ -128,6 +138,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test remove updates before cursor.
+	 *
+	 * @covers Sync_Storage_Provider::remove_updates_before_cursor
 	 */
 	public function test_remove_updates_before_cursor() {
 		global $wpdb;
@@ -152,6 +164,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test invalid room format.
+	 *
+	 * @covers Sync_Storage_Provider::add_update
 	 */
 	public function test_invalid_room_format() {
 		$invalid_room = 'invalid-room-format';
@@ -162,6 +176,9 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test awareness state integration.
+	 *
+	 * @covers Sync_Storage_Provider::set_awareness_state
+	 * @covers Sync_Storage_Provider::get_awareness_state
 	 */
 	public function test_awareness_state() {
 		if ( ! function_exists( 'wp_set_presence' ) ) {
@@ -185,6 +202,9 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 	/**
 	 * Test awareness state is gated by the same permission check as updates.
+	 *
+	 * @covers Sync_Storage_Provider::set_awareness_state
+	 * @covers Sync_Storage_Provider::get_awareness_state
 	 */
 	public function test_awareness_state_requires_permission() {
 		wp_set_current_user( 0 );
@@ -207,6 +227,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	 * Cleanup's cutoff is computed in milliseconds (matching Yjs). Storing
 	 * seconds here would make every row look older than the cutoff and get
 	 * deleted on the very next cleanup run, regardless of actual age.
+	 *
+	 * @covers Sync_Storage_Provider::add_update
 	 */
 	public function test_add_update_stores_millisecond_timestamp() {
 		$this->provider->add_update( $this->room, array( 'data' => 'test' ) );
@@ -231,6 +253,8 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	 * Regression test for a unit mismatch: add_update() previously stored
 	 * seconds while the cleanup cutoff is computed in milliseconds, so every
 	 * row looked older than 7 days and was deleted on the next cron run.
+	 *
+	 * @covers ::sync_storage_cleanup_old_updates
 	 */
 	public function test_fresh_update_survives_cleanup() {
 		$this->provider->add_update( $this->room, array( 'data' => 'fresh' ) );

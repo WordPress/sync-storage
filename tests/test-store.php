@@ -22,6 +22,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test appending returns the new row id.
+	 *
+	 * @covers Sync_Storage_Store::append
 	 */
 	public function test_append_returns_row_id() {
 		$id = Sync_Storage_Store::append( $this->room, array( 'a' => 1 ) );
@@ -32,6 +34,9 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test payloads survive the JSON round trip.
+	 *
+	 * @covers Sync_Storage_Store::append
+	 * @covers Sync_Storage_Store::get_after
 	 */
 	public function test_payloads_round_trip() {
 		$payload = array(
@@ -49,6 +54,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test entries come back oldest first, each with its row id.
+	 *
+	 * @covers Sync_Storage_Store::get_after
 	 */
 	public function test_get_after_is_ordered_and_carries_ids() {
 		$first  = Sync_Storage_Store::append( $this->room, 'first' );
@@ -62,6 +69,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test the cursor is exclusive.
+	 *
+	 * @covers Sync_Storage_Store::get_after
 	 */
 	public function test_get_after_excludes_the_cursor_row() {
 		$first = Sync_Storage_Store::append( $this->room, 'first' );
@@ -75,6 +84,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test rooms don't leak into each other.
+	 *
+	 * @covers Sync_Storage_Store::count
 	 */
 	public function test_rooms_are_isolated() {
 		Sync_Storage_Store::append( $this->room, 'mine' );
@@ -86,6 +97,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test counting an empty room.
+	 *
+	 * @covers Sync_Storage_Store::count
 	 */
 	public function test_count_is_zero_for_an_unused_room() {
 		$this->assertSame( 0, Sync_Storage_Store::count( 'widget/sidebar:never-used' ) );
@@ -93,6 +106,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test delete_before is exclusive and leaves other rooms alone.
+	 *
+	 * @covers Sync_Storage_Store::delete_before
 	 */
 	public function test_delete_before_trims_one_room() {
 		Sync_Storage_Store::append( $this->room, 'first' );
@@ -111,6 +126,9 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 	 *
 	 * The cleanup cutoff is computed in milliseconds. Storing seconds would
 	 * put every row below the cutoff and delete it on the next sweep.
+	 *
+	 * @covers Sync_Storage_Store::append
+	 * @covers Sync_Storage_Store::current_time_ms
 	 */
 	public function test_append_stamps_milliseconds() {
 		Sync_Storage_Store::append( $this->room, 'now' );
@@ -130,6 +148,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test an explicit timestamp is preserved, which is what migration relies on.
+	 *
+	 * @covers Sync_Storage_Store::append
 	 */
 	public function test_append_accepts_an_explicit_timestamp() {
 		$backdated = ( time() - 3 * DAY_IN_SECONDS ) * 1000;
@@ -149,6 +169,8 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 
 	/**
 	 * Test expiry deletes by age, across rooms, and reports the count.
+	 *
+	 * @covers Sync_Storage_Store::delete_expired
 	 */
 	public function test_delete_expired_removes_only_entries_past_the_cutoff() {
 		$eight_days_ago = ( time() - 8 * DAY_IN_SECONDS ) * 1000;

@@ -12,6 +12,11 @@
  * heartbeat handler and isn't something this plugin can drive directly;
  * these tests fire the actions it documents instead, verifying this
  * plugin's own reaction to them.
+ *
+ * The listeners are anonymous functions on add_action(), so there is no
+ * symbol to name here rather than coverage this class could attribute.
+ *
+ * @coversNothing
  */
 class WP_Test_Sync_Storage_Server_Authority extends WP_UnitTestCase {
 

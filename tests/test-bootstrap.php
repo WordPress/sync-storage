@@ -40,6 +40,8 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	 * A symbol from the editor in any of these files is the layering mistake
 	 * this plugin's structure exists to prevent: it would make the table, its
 	 * cleanup and its migrations unloadable without Gutenberg again.
+	 *
+	 * @coversNothing
 	 */
 	public function test_unconditionally_loaded_files_name_no_editor_symbols() {
 		$dir   = dirname( __DIR__ ) . '/';
@@ -67,6 +69,8 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	 * white-screens every admin page.
 	 *
 	 * Tokenized so the constant's name in a docblock is not counted.
+	 *
+	 * @coversNothing
 	 */
 	public function test_gutenberg_version_is_never_read_unguarded() {
 		$root  = dirname( __DIR__ );
@@ -119,6 +123,8 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	 * Requires Plugins blocks activation until every plugin listed is active,
 	 * so listing the editor here would reinstate the old behaviour no matter
 	 * what the loader does.
+	 *
+	 * @coversNothing
 	 */
 	public function test_requires_plugins_does_not_list_the_editor() {
 		$header = get_file_data(
@@ -136,7 +142,10 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	 *
 	 * The pieces that need the editor now load on plugins_loaded instead of at
 	 * file scope, which is only correct if they still end up loaded when the
-	 * editor is there.
+	 * editor is there. Asserts on the result of a load that already happened,
+	 * so it executes nothing itself.
+	 *
+	 * @coversNothing
 	 */
 	public function test_integration_is_wired_up_when_the_interface_exists() {
 		if ( ! interface_exists( 'WP_Sync_Storage' ) ) {
@@ -150,6 +159,8 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 
 	/**
 	 * Test that the notice describes an idle store, not a broken plugin.
+	 *
+	 * @covers ::sync_storage_editor_missing_notice
 	 */
 	public function test_editor_missing_notice_reports_the_store_as_installed() {
 		ob_start();
@@ -166,6 +177,8 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	 * plugins_loaded fires once per request, but the loader is a named
 	 * function on a public hook, and the files it pulls in add filters at
 	 * include time.
+	 *
+	 * @covers ::sync_storage_load_collaboration_integration
 	 */
 	public function test_loading_the_integration_again_does_not_duplicate_filters() {
 		if ( ! interface_exists( 'WP_Sync_Storage' ) ) {
@@ -186,6 +199,9 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 
 	/**
 	 * Test that the store is usable with no editor involved at all.
+	 *
+	 * @covers Sync_Storage_Store::append
+	 * @covers Sync_Storage_Store::count
 	 */
 	public function test_store_works_without_the_integration() {
 		Sync_Storage_Store::append( 'widget/inbox:1', array( 'payload' => 'opaque' ) );

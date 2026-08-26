@@ -21,7 +21,9 @@ class WP_Test_Sync_Storage_Deactivation extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::sync_storage_deactivate
+	 * Asserts on registration, so it executes nothing in lib/.
+	 *
+	 * @coversNothing
 	 */
 	public function test_deactivation_hook_is_registered() {
 		$hook = 'deactivate_' . plugin_basename( WP_SYNC_STORAGE_PLUGIN_DIR . 'sync-storage.php' );
@@ -37,7 +39,7 @@ class WP_Test_Sync_Storage_Deactivation extends WP_UnitTestCase {
 	 * exists for. Read out of the plugin file because the test environment has
 	 * a working environment by definition and cannot reach that path.
 	 *
-	 * @covers ::sync_storage_deactivate
+	 * @coversNothing
 	 */
 	public function test_deactivation_is_registered_before_the_guards() {
 		$plugin = file_get_contents( dirname( __DIR__ ) . '/sync-storage.php' );
