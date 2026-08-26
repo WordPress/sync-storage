@@ -36,6 +36,8 @@ class WP_Test_Sync_Storage_Deactivation extends WP_UnitTestCase {
 	 * broke, so registration below either guard would miss the case the hook
 	 * exists for. Read out of the plugin file because the test environment has
 	 * a working environment by definition and cannot reach that path.
+	 *
+	 * @covers ::sync_storage_deactivate
 	 */
 	public function test_deactivation_is_registered_before_the_guards() {
 		$plugin = file_get_contents( dirname( __DIR__ ) . '/sync-storage.php' );
