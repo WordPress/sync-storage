@@ -56,6 +56,21 @@ class WP_Test_Sync_Storage_Deactivation extends WP_UnitTestCase {
 	}
 
 	/**
+	 * wp_clear_scheduled_hook() would key on the empty argument list and
+	 * walk past these.
+	 *
+	 * @covers ::sync_storage_deactivate_site
+	 */
+	public function test_deactivation_clears_events_scheduled_with_arguments() {
+		wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
+		wp_schedule_event( time(), 'daily', 'sync_storage_cleanup_stale_updates', array( 'legacy' ) );
+
+		sync_storage_deactivate();
+
+		$this->assertFalse( wp_next_scheduled( 'sync_storage_cleanup_stale_updates', array( 'legacy' ) ) );
+	}
+
+	/**
 	 * Deactivating is not uninstalling: the log survives so a site that
 	 * reactivates finds it where it left it.
 	 *

@@ -85,15 +85,17 @@ function sync_storage_deactivate( $network_wide = false ) {
  * cron option, so a network deactivation has to clear each one. Left behind,
  * it stays in that option indefinitely and fires daily against a callback the
  * deactivated plugin no longer registers.
+ *
+ * wp_unschedule_hook() rather than wp_clear_scheduled_hook(): the latter
+ * keys on md5( serialize( $args ) ), so it would walk past any entry
+ * scheduled with arguments.
  */
 function sync_storage_deactivate_site() {
-	if ( ! wp_next_scheduled( 'sync_storage_cleanup_stale_updates' ) ) {
-		return;
+	$cleared = wp_unschedule_hook( 'sync_storage_cleanup_stale_updates' );
+
+	if ( $cleared ) {
+		Sync_Storage_Logger::event( 'Cleanup cron cleared', array( 'events' => $cleared ) );
 	}
-
-	wp_clear_scheduled_hook( 'sync_storage_cleanup_stale_updates' );
-
-	Sync_Storage_Logger::event( 'Cleanup cron cleared' );
 }
 
 /**
@@ -102,6 +104,9 @@ function sync_storage_deactivate_site() {
  * Paginates site IDs rather than loading every site at once, so a large
  * network doesn't run dbDelta -- or anything else a caller passes -- for
  * thousands of sites off one query.
+ *
+ * The sweep runs inline, so a timeout part way through leaves the remaining
+ * sites untouched. Activation retries; deactivation does not.
  *
  * @param callable $callback Runs with each site as the current one.
  */
