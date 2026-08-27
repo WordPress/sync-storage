@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.10](https://github.com/WordPress/sync-storage/compare/v0.1.9...v0.1.10) (2026-08-26)
+
+
+### Bug Fixes
+
+* clear the cleanup cron when the plugin is deactivated ([#77](https://github.com/WordPress/sync-storage/issues/77)) ([a934109](https://github.com/WordPress/sync-storage/commit/a93410965c4f705fffef853449a68ee86a49e823))
+* guard GUTENBERG_VERSION in the build id ([#82](https://github.com/WordPress/sync-storage/issues/82)) ([baf159e](https://github.com/WordPress/sync-storage/commit/baf159e416f6b15e114f92029964457a00589a7b))
+* register the deactivation hook above the dependency guards ([#80](https://github.com/WordPress/sync-storage/issues/80)) ([7962a4c](https://github.com/WordPress/sync-storage/commit/7962a4c58424f8aff9ce8647350df609f26edf86))
+* scope the Presence API guard to the features that need it ([#84](https://github.com/WordPress/sync-storage/issues/84)) ([c5d703a](https://github.com/WordPress/sync-storage/commit/c5d703a21238409a9606b08749be5440f2f0f5f8)), closes [#81](https://github.com/WordPress/sync-storage/issues/81)
+* strip PR links from the generated readme.txt changelog ([#83](https://github.com/WordPress/sync-storage/issues/83)) ([8c3d2fc](https://github.com/WordPress/sync-storage/commit/8c3d2fc6fb5b8eb4e6411d402f7d56dc56c98f6b))
+
 ## [0.1.9](https://github.com/WordPress/sync-storage/compare/v0.1.8...v0.1.9) (2026-08-25)
 
 
