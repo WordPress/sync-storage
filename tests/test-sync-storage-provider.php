@@ -175,7 +175,11 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test awareness state integration.
+	 * Test awareness state round trips with every field Gutenberg reads.
+	 *
+	 * Asserting only that an array came back is what let #88 through: the
+	 * entry was present but carried a null updated_at, and the sync server
+	 * drops entries on that field alone.
 	 *
 	 * @covers Sync_Storage_Provider::set_awareness_state
 	 * @covers Sync_Storage_Provider::get_awareness_state
@@ -197,7 +201,41 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 		$this->assertTrue( $result );
 
 		$retrieved = $this->provider->get_awareness_state( $this->room );
-		$this->assertIsArray( $retrieved );
+
+		$this->assertCount( 1, $retrieved );
+		$this->assertSame( 'client-123', $retrieved[0]['client_id'] );
+		$this->assertSame( array( 'cursor' => 10 ), $retrieved[0]['state'] );
+		$this->assertSame( get_current_user_id(), (int) $retrieved[0]['wp_user_id'] );
+		$this->assertIsInt( $retrieved[0]['updated_at'] );
+	}
+
+	/**
+	 * Test a just-written entry survives the sync server's expiry check.
+	 *
+	 * Gutenberg expires awareness on `time() - $entry['updated_at'] >= 30`
+	 * (WP_HTTP_Polling_Sync_Server::AWARENESS_TIMEOUT), and applies it to
+	 * whatever storage returns. A non-timestamp there makes that subtraction
+	 * an epoch-sized number, so every collaborator is pruned on every poll
+	 * and awareness never reaches the editor at all (#88).
+	 *
+	 * The threshold is duplicated rather than read off the class, which is
+	 * only loaded when the editor is: the point is that our value is usable
+	 * arithmetic, not that we agree on the constant.
+	 *
+	 * @covers Sync_Storage_Provider::get_awareness_state
+	 */
+	public function test_awareness_updated_at_is_a_timestamp_the_sync_server_can_age() {
+		if ( ! function_exists( 'wp_set_presence' ) ) {
+			$this->markTestSkipped( 'Presence API not available' );
+		}
+
+		wp_set_presence( $this->room, 'client-remote', array( 'cursor' => 10 ), get_current_user_id() );
+
+		$entry = $this->provider->get_awareness_state( $this->room )[0];
+		$age   = time() - $entry['updated_at'];
+
+		$this->assertGreaterThanOrEqual( 0, $age, 'Awareness is stamped in the future.' );
+		$this->assertLessThan( 30, $age, 'A just-written entry reads as expired to the sync server.' );
 	}
 
 	/**

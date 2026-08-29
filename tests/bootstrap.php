@@ -45,6 +45,13 @@ tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
  */
 function _create_test_tables() {
 	sync_storage_install();
+
+	// Presence provisions its table from admin_init, which never fires here.
+	// Without this wp_presence_has_table() is false, so every presence read
+	// and write no-ops and the awareness tests assert against nothing.
+	if ( function_exists( 'wp_maybe_create_presence_table' ) ) {
+		wp_maybe_create_presence_table();
+	}
 }
 tests_add_filter( 'init', '_create_test_tables' );
 
