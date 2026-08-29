@@ -52,8 +52,10 @@ The split is internal. These aren't separate plugins, and shouldn't be until som
 
 **Awareness**
 1. Gutenberg calls `set_awareness_state( $room, $awareness )`
-2. Each entry is forwarded to Presence API's `wp_set_presence()`
-3. Reads go through `get_awareness_state( $room )`, which calls `wp_get_presence()` and reshapes the result into Gutenberg's expected format
+2. Each entry is forwarded to Presence API's `wp_set_presence()`, keyed `sync-{client_id}`
+3. Reads go through `get_awareness_state( $room )`, which calls `wp_get_presence()`, keeps only the `sync-` entries and reshapes them into Gutenberg's expected format
+
+Presence API's Heartbeat writes its own `editor-{user_id}` entries into the same room, so the prefix is what keeps a room's two kinds of entry apart.
 
 **CRDT updates**
 1. Gutenberg calls `add_update( $room, $update )`
