@@ -23,6 +23,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Sync_Storage_Provider implements WP_Sync_Storage {
 
 	/**
+	 * Prefix marking a presence entry as Gutenberg awareness written by us.
+	 *
+	 * Presence API's Heartbeat handler writes into the same room string this
+	 * provider uses, keyed `editor-{user_id}`, with its own state shape.
+	 * Returning those rows to Gutenberg as awareness makes the editor throw on
+	 * a field it has no equality check for. Prefixing our own writes, and
+	 * reading nothing else back, keeps the two sets of entries apart.
+	 */
+	private const CLIENT_PREFIX = 'sync-';
+
+	/**
 	 * Cache of cursors by room (last returned update ID).
 	 *
 	 * @var array<string, int>
@@ -79,19 +90,26 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 			return array();
 		}
 
-		// Transform presence entries to Gutenberg awareness format.
+		// Transform our own presence entries to Gutenberg awareness format.
 		// Gutenberg expects: [ {client_id, state, updated_at, wp_user_id}, ... ].
-		$awareness = array_map(
-			function ( $entry ) {
-				return array(
-					'client_id'  => $entry->client_id,
-					'state'      => $entry->data,
-					'updated_at' => $entry->last_seen,
-					'wp_user_id' => $entry->user_id,
-				);
-			},
-			$entries
-		);
+		// client_id is the Yjs client ID as an int, which the sync server
+		// compares strictly against the polling client's own. updated_at is a
+		// Unix timestamp, which it subtracts from time() to expire an entry;
+		// Presence stores a GMT datetime string.
+		$awareness = array();
+
+		foreach ( $entries as $entry ) {
+			if ( 0 !== strpos( $entry->client_id, self::CLIENT_PREFIX ) ) {
+				continue;
+			}
+
+			$awareness[] = array(
+				'client_id'  => (int) substr( $entry->client_id, strlen( self::CLIENT_PREFIX ) ),
+				'state'      => $entry->data,
+				'updated_at' => strtotime( $entry->date_gmt . ' UTC' ),
+				'wp_user_id' => $entry->user_id,
+			);
+		}
 
 		Sync_Storage_Logger::storage( 'get_awareness_state:result', $room, $awareness );
 		return $awareness;
@@ -128,7 +146,7 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 
 			wp_set_presence(
 				$room,
-				$entry['client_id'],
+				self::CLIENT_PREFIX . $entry['client_id'],
 				$entry['state'] ?? array(),
 				$entry['wp_user_id']
 			);

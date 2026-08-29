@@ -2,6 +2,12 @@
  * Tests for Gutenberg WP_Sync_Storage integration.
  */
 import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
+import {
+	createCollaborativeSessions,
+	closeCollaborativeSessions,
+	pollSync,
+	postRoom,
+} from './utils/collaborative';
 
 const test = base.extend({});
 
@@ -94,5 +100,42 @@ test.describe('Gutenberg Integration', () => {
 		// keyboard shortcut whose modifier key (Meta vs Ctrl) is OS-dependent
 		// and doesn't work in this Linux CI environment.
 		await editorUtils.saveDraft();
+	});
+
+	// Goes through POST /wp-sync/v1/updates rather than reading the presence
+	// table, so the assertion covers what Gutenberg's sync server does with
+	// what our provider returns, not just what we stored. The server expires
+	// awareness on time() - updated_at, and a provider that returns anything
+	// but a timestamp there drops every collaborator before the response is
+	// built. That was #88, and a test reading presence directly missed it.
+	test('a collaborator survives the sync server round trip', async ({
+		browser,
+	}) => {
+		const sessions = await createCollaborativeSessions(browser, 2);
+
+		try {
+			const post = await sessions[0].requestUtils.createPost({
+				title: 'Awareness Round Trip',
+				content: 'Initial.',
+				status: 'publish',
+			});
+			const room = postRoom(post.id);
+
+			await pollSync(sessions[0], room, {
+				awareness: { cursor: { index: 1 } },
+			});
+
+			const seen = await pollSync(sessions[1], room, {
+				awareness: { cursor: { index: 2 } },
+			});
+
+			// The second client always sees itself; the first is what the
+			// expiry check would have removed.
+			expect(Object.keys(seen.awareness)).toContain(
+				String(sessions[0].clientId)
+			);
+		} finally {
+			await closeCollaborativeSessions(sessions);
+		}
 	});
 });
