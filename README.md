@@ -134,7 +134,14 @@ Gutenberg's own filter, hooked by this plugin to replace its default post-meta-b
 
 [Gutenberg](https://github.com/WordPress/gutenberg) trunk (or a future release once `__unstable_wp_sync_storage` ships stable) is what consumes this storage, not what it needs to run. Without it the table, its cleanup and `Sync_Storage_Store` all install and work; the collaboration integration stays unloaded and says so in wp-admin.
 
-No persistent object cache (Redis, Memcached) required, and no WebSocket support required, either from the server or the host. Sync updates poll over regular HTTP through Gutenberg's own sync client, so this runs on shared hosting without any extra infrastructure.
+> [!NOTE]
+> Sync Storage targets the lowest common denominator of hosting environments. Anything a managed host offers on top of that is a bonus, never a dependency.
+
+| Not required | Why |
+| --- | --- |
+| Persistent object cache (Redis, Memcached) | Awareness and CRDT updates go to dedicated tables, not transients or the cache. |
+| WebSocket support, from the server or the host | Sync updates poll over regular HTTP through Gutenberg's own sync client. |
+| Background workers or any extra service | Expiring stale updates is a WP-Cron event. |
 
 ## Maintainers
 
