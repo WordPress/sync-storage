@@ -191,7 +191,7 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 
 		$awareness = array(
 			array(
-				'client_id'  => 'client-123',
+				'client_id'  => 4033094322,
 				'state'      => array( 'cursor' => 10 ),
 				'wp_user_id' => get_current_user_id(),
 			),
@@ -203,10 +203,56 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 		$retrieved = $this->provider->get_awareness_state( $this->room );
 
 		$this->assertCount( 1, $retrieved );
-		$this->assertSame( 'client-123', $retrieved[0]['client_id'] );
+		$this->assertSame( 4033094322, $retrieved[0]['client_id'] );
 		$this->assertSame( array( 'cursor' => 10 ), $retrieved[0]['state'] );
 		$this->assertSame( get_current_user_id(), (int) $retrieved[0]['wp_user_id'] );
 		$this->assertIsInt( $retrieved[0]['updated_at'] );
+	}
+
+	/**
+	 * Test presence entries written by anything else stay out of awareness.
+	 *
+	 * Presence API's Heartbeat handler writes into the same room string this
+	 * provider uses, keyed `editor-{user_id}`, carrying its own state shape
+	 * (`action`, `screen`, `locked`). Handing those to Gutenberg makes
+	 * PostEditorAwareness throw on a field it has no equality check for, and
+	 * the sync client backs off on every poll.
+	 *
+	 * @covers Sync_Storage_Provider::get_awareness_state
+	 */
+	public function test_awareness_excludes_entries_this_provider_did_not_write() {
+		if ( ! function_exists( 'wp_set_presence' ) ) {
+			$this->markTestSkipped( 'Presence API not available' );
+		}
+
+		$user_id = get_current_user_id();
+
+		wp_set_presence(
+			$this->room,
+			'editor-' . $user_id,
+			array(
+				'action' => 'editing',
+				'screen' => 'post',
+				'locked' => false,
+			),
+			$user_id
+		);
+
+		$this->provider->set_awareness_state(
+			$this->room,
+			array(
+				array(
+					'client_id'  => 4033094322,
+					'state'      => array( 'cursor' => 10 ),
+					'wp_user_id' => $user_id,
+				),
+			)
+		);
+
+		$retrieved = $this->provider->get_awareness_state( $this->room );
+
+		$this->assertCount( 1, $retrieved );
+		$this->assertSame( 4033094322, $retrieved[0]['client_id'] );
 	}
 
 	/**
@@ -229,7 +275,16 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 			$this->markTestSkipped( 'Presence API not available' );
 		}
 
-		wp_set_presence( $this->room, 'client-remote', array( 'cursor' => 10 ), get_current_user_id() );
+		$this->provider->set_awareness_state(
+			$this->room,
+			array(
+				array(
+					'client_id'  => 4033094322,
+					'state'      => array( 'cursor' => 10 ),
+					'wp_user_id' => get_current_user_id(),
+				),
+			)
+		);
 
 		$entry = $this->provider->get_awareness_state( $this->room )[0];
 		$age   = time() - $entry['updated_at'];
