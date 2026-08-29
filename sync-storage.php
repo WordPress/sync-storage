@@ -56,8 +56,8 @@ if ( version_compare( $wp_version, '7.0-alpha', '<' ) ) {
  * Presence API supplies awareness -- who else is in a room and where their
  * cursor is -- and nothing else. Requires Plugins above means activation needs
  * it, but a site can lose it afterwards, and every call into it is already
- * guarded at its call site. Returning here would take the table, its cleanup
- * and its migrations down with a dependency none of them use.
+ * guarded at its call site. Returning here would take the table and its
+ * cleanup down with a dependency neither of them uses.
  */
 if ( ! function_exists( 'wp_get_presence' ) ) {
 	add_action( 'admin_notices', 'sync_storage_presence_missing_notice' );
@@ -91,7 +91,6 @@ require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/store/cleanup.php';
 wp_sync_storage_register_table();
 
 require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/install.php';
-require_once WP_SYNC_STORAGE_PLUGIN_DIR . 'lib/migration.php';
 
 // Presence API's collaboration threshold events. No Gutenberg symbols and no
 // Presence calls, only listeners, so this loads whether or not either is

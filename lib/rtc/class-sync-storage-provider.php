@@ -43,7 +43,6 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 	 * @return bool True if user can collaborate in this room.
 	 */
 	private function validate_access( string $room ): bool {
-		// Validate room format: postType/type:id.
 		if ( ! preg_match( '/^postType\/([a-z0-9_-]+):(\d+)$/i', $room, $matches ) ) {
 			return false;
 		}
@@ -225,7 +224,6 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 			return array();
 		}
 
-		// Track the last cursor for this room.
 		$last_id                     = end( $entries )['id'];
 		$this->room_cursors[ $room ] = $last_id;
 
