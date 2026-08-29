@@ -4,7 +4,7 @@ Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.10
+Stable tag: 0.1.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.11 =
+* Fix: drop the post meta migration that never migrated anything
+
 = 0.1.10 =
 * Fix: clear the cleanup cron when the plugin is deactivated
 * Fix: guard GUTENBERG_VERSION in the build id
@@ -92,6 +95,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.1.7 =
 * Fix: bound Playwright browser install with a timeout and retry
-
-= 0.1.6 =
-* Fix: make playwright.yml workflow_call-only like its CI siblings
