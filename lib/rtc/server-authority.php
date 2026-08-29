@@ -12,9 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * When collaboration starts (1→2 editors), announce the room as active.
  *
- * Announcing is all this does. Earlier versions also set `_sync_storage_active`
- * post meta, which nothing read -- a post cache invalidation on every threshold
- * crossing, in the one plugin whose reason to exist is avoiding exactly that.
+ * Announcing is all this does. Nothing here writes post meta: a post cache
+ * invalidation on every threshold crossing is the cost this plugin exists to
+ * avoid.
  */
 add_action(
 	'wp_presence_collaboration_started',

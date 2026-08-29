@@ -15,8 +15,8 @@ global $wpdb;
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}collaboration" );
 
-// Remove options. The migration flag is written by 0.1.10 and earlier, whose
-// activation ran a post meta migration that has since been removed (#74).
+// Remove options. Nothing writes the migration flag now, but 0.1.10 and
+// earlier did, from an activation migration since removed (#74).
 delete_option( 'sync_storage_db_version' );
 delete_option( 'sync_storage_migrated_from_post_meta' );
 delete_option( 'sync_storage_filter_check' );

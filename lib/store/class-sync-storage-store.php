@@ -51,7 +51,7 @@ class Sync_Storage_Store {
 	 * @param string   $room         Room identifier.
 	 * @param mixed    $data         Payload. Opaque to this layer, stored JSON-encoded.
 	 * @param int|null $timestamp_ms Timestamp in milliseconds. Defaults to now; pass one
-	 *                               only when backfilling entries that already have a time.
+	 *                               only for an entry that already has a time of its own.
 	 * @return int|false Inserted row id, or false on failure.
 	 */
 	public static function append( string $room, $data, ?int $timestamp_ms = null ) {
