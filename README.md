@@ -7,11 +7,14 @@
 
 Storage layer for Gutenberg's real-time collaborative editing.
 
-The Playground demo installs Gutenberg from the plugin directory, and no tagged Gutenberg release carries the `__unstable_wp_sync_storage` filter yet, so it boots all three plugins and warns in wp-admin instead of demonstrating the storage swap. Until that release lands, [run locally](#run-locally) against a trunk build to see the real thing.
+> [!IMPORTANT]
+> **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services. Anything a managed host offers on top is a bonus, never a dependency — see [Requirements](#requirements).
+
+No tagged Gutenberg release carries the `__unstable_wp_sync_storage` filter yet, so the Playground demo boots all three plugins and warns in wp-admin rather than showing the storage swap. [Run locally](#run-locally) against trunk to see the real thing.
 
 ## Problem
 
-Gutenberg's real-time collaboration needs somewhere to keep two kinds of data: ephemeral awareness (who's in the room, cursor position) and a persistent log of CRDT updates for each document. Storing either as post meta means every write invalidates post caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin implements Gutenberg's `WP_Sync_Storage` interface to keep both out of post meta entirely: awareness is delegated to [Presence API](https://wordpress.org/plugins/presence-api/)'s `wp_presence` table, and CRDT updates go into a dedicated `wp_collaboration` table. Dedicated tables, not transients or object cache, so this works the same on shared hosting with no persistent object cache as it does anywhere else.
+Real-time collaboration keeps two kinds of data: ephemeral awareness (who's in the room, cursor position) and a persistent log of CRDT updates per document. As post meta, every write invalidates post caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin implements Gutenberg's `WP_Sync_Storage` interface to move both out: awareness to [Presence API](https://wordpress.org/plugins/presence-api/)'s `wp_presence` table, CRDT updates to a dedicated `wp_collaboration` table.
 
 ## Run locally
 
@@ -24,7 +27,7 @@ npm run env:start
 
 Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).
 
-The first run builds Gutenberg from trunk, since the `__unstable_wp_sync_storage` filter this plugin hooks hasn't shipped in a tagged Gutenberg release yet. That takes a few minutes; subsequent runs reuse the build.
+The first run builds Gutenberg from trunk, since the filter this plugin hooks isn't in a tagged release yet. A few minutes; subsequent runs reuse the build.
 
 ## Architecture
 
@@ -36,14 +39,14 @@ The first run builds Gutenberg from trunk, since the `__unstable_wp_sync_storage
 | `lib/rtc/` | The adapter that makes that store Gutenberg's collaborative editing backend: room naming and access rules, cursor bookkeeping, awareness delegated to Presence API. | `store/`, Gutenberg, Presence API |
 | `lib/site/` | What activating the plugin implies for a site's settings. No storage logic. | WordPress options |
 
-Two rules follow from that, and reviews should hold them:
+Two rules follow, and reviews should hold them:
 
 - **`$wpdb` outside `lib/store/` is a layering mistake.** `Sync_Storage_Store` is the only place that touches the table.
-- **`lib/store/` stays free of Gutenberg, Presence API and Yjs vocabulary.** A room is a string and a payload is opaque. `tests/test-store.php` exercises the store with non-post rooms and no capability checks specifically to keep that honest.
+- **`lib/store/` stays free of Gutenberg, Presence API and Yjs vocabulary.** A room is a string and a payload is opaque. `tests/test-store.php` uses non-post rooms and no capability checks to keep that honest.
 
-The loader enforces the same split. Only the store, its install path, and the Presence API listeners load with the plugin; `Sync_Storage_Provider`, the filter and the experiment opt-in wait for `plugins_loaded` and load only if `WP_Sync_Storage` is declared. The interface is the condition rather than `GUTENBERG_VERSION` because it is the actual dependency, and it moves to core with the feature. `tests/test-bootstrap.php` reads the file-scope `require_once` calls back out of `sync-storage.php` and fails if anything naming an editor symbol crosses into them.
+The loader enforces the same split. The store, its install path and the Presence API listeners load with the plugin; `Sync_Storage_Provider`, the filter and the experiment opt-in wait for `plugins_loaded` and load only if `WP_Sync_Storage` is declared — the interface, not `GUTENBERG_VERSION`, because it is the actual dependency and it moves to core with the feature. `tests/test-bootstrap.php` reads the file-scope `require_once` calls back out of `sync-storage.php` and fails if an editor symbol crosses into them.
 
-The split is internal. These are not separate plugins, and shouldn't be until something other than real-time collaboration actually needs the store.
+The split is internal. These aren't separate plugins, and shouldn't be until something other than real-time collaboration needs the store.
 
 ## Data flow
 
@@ -68,7 +71,7 @@ Both paths validate that the current user can `edit_post` the room's underlying 
 
 ## PHP API
 
-This plugin implements Gutenberg's `WP_Sync_Storage` interface. These are the methods `Sync_Storage_Provider` provides; there's no separate global-function API like Presence API's.
+`Sync_Storage_Provider` implements Gutenberg's `WP_Sync_Storage` interface. There's no separate global-function API like Presence API's.
 
 ```php
 // Read awareness state for a room, reshaped from Presence API's format.
@@ -112,7 +115,7 @@ A daily cron removes rows older than 7 days.
 ## Hooks
 
 ### `sync_storage_room_active` / `sync_storage_room_inactive`
-Fired when a room's collaborator count crosses the 1-to-2 threshold, as reported by Presence API. Nothing in the plugin listens; they exist so integrations can react to collaboration starting and stopping.
+Fired when a room's collaborator count crosses the 1-to-2 threshold, per Presence API. Nothing in the plugin listens; they exist for integrations that want to react.
 ```php
 add_action( 'sync_storage_room_active', function ( $post_id, $entries ) {
     // A second collaborator just joined $post_id.
@@ -124,7 +127,7 @@ add_action( 'sync_storage_room_inactive', function ( $post_id, $entries ) {
 ```
 
 ### `__unstable_wp_sync_storage`
-Gutenberg's own filter, hooked by this plugin to replace its default post-meta-backed storage with `Sync_Storage_Provider`. Any plugin can hook this filter to supply a different `WP_Sync_Storage` implementation (Redis, WebSocket-backed, etc.) without patching Gutenberg.
+Gutenberg's own filter, hooked here to replace its default post-meta storage with `Sync_Storage_Provider`. Any plugin can hook it to supply a different `WP_Sync_Storage` implementation (Redis, WebSocket-backed) without patching Gutenberg.
 
 ## Requirements
 
@@ -132,16 +135,13 @@ Gutenberg's own filter, hooked by this plugin to replace its default post-meta-b
 - PHP 7.4+
 - [Presence API](https://wordpress.org/plugins/presence-api/)
 
-[Gutenberg](https://github.com/WordPress/gutenberg) trunk (or a future release once `__unstable_wp_sync_storage` ships stable) is what consumes this storage, not what it needs to run. Without it the table, its cleanup and `Sync_Storage_Store` all install and work; the collaboration integration stays unloaded and says so in wp-admin.
-
-> [!NOTE]
-> Sync Storage targets the lowest common denominator of hosting environments. Anything a managed host offers on top of that is a bonus, never a dependency.
+[Gutenberg](https://github.com/WordPress/gutenberg) trunk consumes this storage; it isn't needed to run it. Without it the table, its cleanup and `Sync_Storage_Store` still install and work, and the collaboration integration stays unloaded and says so in wp-admin.
 
 | Not required | Why |
 | --- | --- |
-| Persistent object cache (Redis, Memcached) | Awareness and CRDT updates go to dedicated tables, not transients or the cache. |
-| WebSocket support, from the server or the host | Sync updates poll over regular HTTP through Gutenberg's own sync client. |
-| Background workers or any extra service | Expiring stale updates is a WP-Cron event. |
+| Persistent object cache (Redis, Memcached) | Awareness and updates go to real tables, not transients. |
+| WebSockets, from the server or the host | Updates poll over ordinary HTTP through Gutenberg's sync client. |
+| Background workers or any extra service | Expiry is a WP-Cron event. |
 
 ## Maintainers
 
