@@ -8,7 +8,7 @@
 Storage layer for Gutenberg's real-time collaborative editing.
 
 > [!IMPORTANT]
-> **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services. Anything a managed host offers on top is a bonus, never a dependency — see [Requirements](#requirements).
+> **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services. Anything a managed host offers on top is a bonus, never a dependency. See [Requirements](#requirements).
 
 No tagged Gutenberg release carries the `__unstable_wp_sync_storage` filter yet, so the Playground demo boots all three plugins and warns in wp-admin rather than showing the storage swap. [Run locally](#run-locally) against trunk to see the real thing.
 
@@ -31,7 +31,7 @@ The first run builds Gutenberg from trunk, since the filter this plugin hooks is
 
 ## Architecture
 
-`lib/` is three layers, and dependencies point one way — `rtc/` calls `store/`, and `store/` never calls back.
+`lib/` is three layers, and dependencies point one way. `rtc/` calls `store/`, and `store/` never calls back.
 
 | Directory | Holds | Knows about |
 | --------- | ----- | ----------- |
@@ -44,7 +44,7 @@ Two rules follow, and reviews should hold them:
 - **`$wpdb` outside `lib/store/` is a layering mistake.** `Sync_Storage_Store` is the only place that touches the table.
 - **`lib/store/` stays free of Gutenberg, Presence API and Yjs vocabulary.** A room is a string and a payload is opaque. `tests/test-store.php` uses non-post rooms and no capability checks to keep that honest.
 
-The loader enforces the same split. The store, its install path and the Presence API listeners load with the plugin; `Sync_Storage_Provider`, the filter and the experiment opt-in wait for `plugins_loaded` and load only if `WP_Sync_Storage` is declared — the interface, not `GUTENBERG_VERSION`, because it is the actual dependency and it moves to core with the feature. `tests/test-bootstrap.php` reads the file-scope `require_once` calls back out of `sync-storage.php` and fails if an editor symbol crosses into them.
+The loader enforces the same split. The store, its install path and the Presence API listeners load with the plugin; `Sync_Storage_Provider`, the filter and the experiment opt-in wait for `plugins_loaded` and load only if `WP_Sync_Storage` is declared. The interface, not `GUTENBERG_VERSION`, because it is the actual dependency and it moves to core with the feature. `tests/test-bootstrap.php` reads the file-scope `require_once` calls back out of `sync-storage.php` and fails if an editor symbol crosses into them.
 
 The split is internal. These aren't separate plugins, and shouldn't be until something other than real-time collaboration needs the store.
 
