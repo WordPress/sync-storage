@@ -41,7 +41,7 @@ Two rules follow from that, and reviews should hold them:
 - **`$wpdb` outside `lib/store/` is a layering mistake.** `Sync_Storage_Store` is the only place that touches the table.
 - **`lib/store/` stays free of Gutenberg, Presence API and Yjs vocabulary.** A room is a string and a payload is opaque. `tests/test-store.php` exercises the store with non-post rooms and no capability checks specifically to keep that honest.
 
-The loader enforces the same split. Only the store, its install and migration paths, and the Presence API listeners load with the plugin; `Sync_Storage_Provider`, the filter and the experiment opt-in wait for `plugins_loaded` and load only if `WP_Sync_Storage` is declared. The interface is the condition rather than `GUTENBERG_VERSION` because it is the actual dependency, and it moves to core with the feature. `tests/test-bootstrap.php` reads the file-scope `require_once` calls back out of `sync-storage.php` and fails if anything naming an editor symbol crosses into them.
+The loader enforces the same split. Only the store, its install path, and the Presence API listeners load with the plugin; `Sync_Storage_Provider`, the filter and the experiment opt-in wait for `plugins_loaded` and load only if `WP_Sync_Storage` is declared. The interface is the condition rather than `GUTENBERG_VERSION` because it is the actual dependency, and it moves to core with the feature. `tests/test-bootstrap.php` reads the file-scope `require_once` calls back out of `sync-storage.php` and fails if anything naming an editor symbol crosses into them.
 
 The split is internal. These are not separate plugins, and shouldn't be until something other than real-time collaboration actually needs the store.
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Activation: create the store's table, schedule cleanup, run migrations.
+ * Activation: create the store's table and schedule its cleanup.
  *
  * Orchestration only -- it decides *when* each layer's setup runs. The table
  * definition itself lives in lib/store/schema.php, and the teardown in
@@ -45,8 +45,6 @@ function sync_storage_install_site() {
 		wp_schedule_event( time(), 'daily', 'sync_storage_cleanup_stale_updates' );
 		Sync_Storage_Logger::event( 'Cleanup cron scheduled' );
 	}
-
-	sync_storage_migrate_post_meta();
 
 	Sync_Storage_Logger::event( 'Installation complete' );
 }

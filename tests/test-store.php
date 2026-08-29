@@ -147,7 +147,7 @@ class WP_Test_Sync_Storage_Store extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test an explicit timestamp is preserved, which is what migration relies on.
+	 * Test an explicit timestamp is preserved, which is what expiry relies on.
 	 *
 	 * @covers Sync_Storage_Store::append
 	 */

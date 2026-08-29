@@ -38,8 +38,8 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	 * Test that nothing loaded unconditionally names an editor symbol.
 	 *
 	 * A symbol from the editor in any of these files is the layering mistake
-	 * this plugin's structure exists to prevent: it would make the table, its
-	 * cleanup and its migrations unloadable without Gutenberg again.
+	 * this plugin's structure exists to prevent: it would make the table and
+	 * its cleanup unloadable without Gutenberg again.
 	 *
 	 * @coversNothing
 	 */
@@ -144,9 +144,9 @@ class WP_Test_Sync_Storage_Bootstrap extends WP_UnitTestCase {
 	 *
 	 * Presence supplies awareness and nothing else, and every call into it is
 	 * guarded at its call site. Returning from this guard would take the
-	 * table, its cleanup and its migrations down with a dependency none of
-	 * them use. Read out of the plugin file because the test environment has
-	 * Presence loaded by definition and cannot reach that path.
+	 * table and its cleanup down with a dependency neither of them uses. Read
+	 * out of the plugin file because the test environment has Presence loaded
+	 * by definition and cannot reach that path.
 	 *
 	 * @coversNothing
 	 */
