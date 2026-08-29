@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/WordPress/sync-storage/compare/v0.1.10...v0.1.11) (2026-08-29)
+
+
+### Bug Fixes
+
+* drop the post meta migration that never migrated anything ([#85](https://github.com/WordPress/sync-storage/issues/85)) ([4624cab](https://github.com/WordPress/sync-storage/commit/4624cabba6c6d5b527ad8d0614c35d077c5a21ea))
+
 ## [0.1.10](https://github.com/WordPress/sync-storage/compare/v0.1.9...v0.1.10) (2026-08-26)
 
 
