@@ -4,7 +4,7 @@ Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.12
+Stable tag: 0.1.13
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,11 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.13 =
+* Feature: make the Playground grid three collaborator counts
+* Fix: land the Playground demo in the room the peers were seeded into
+* Fix: make the Playground preview trigger match what it previews
+
 = 0.1.12 =
 * Feature: add Playground preview grid for pull requests
 * Fix: cast wp_user_id to int in awareness state
@@ -88,14 +93,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.1.9 =
 * Fix: key the filter-support cache on the Gutenberg build, not its version
-
-= 0.1.8 =
-* Fix: batch-delete stale updates in a loop so cleanup can catch up
-* Fix: bound every CI job with a timeout and stop masking install failures
-* Fix: fix stale plugin filename in phpunit.xml.dist
-* Fix: make PHPStan actually analyse the plugin
-* Fix: make the Playground blueprints activate the plugin
-* Fix: make waitForSyncStorage() actually wait for the storage provider
-* Fix: provision existing sites on network activation
-* Fix: stop writing the post meta flag nothing reads
-* Fix: strip closes clauses when generating readme.txt's changelog

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.13](https://github.com/WordPress/sync-storage/compare/v0.1.12...v0.1.13) (2026-09-01)
+
+
+### Features
+
+* make the Playground grid three collaborator counts ([#98](https://github.com/WordPress/sync-storage/issues/98)) ([aa90696](https://github.com/WordPress/sync-storage/commit/aa906966023a85abd4d7e78505e48bd32eed2ff3))
+
+
+### Bug Fixes
+
+* land the Playground demo in the room the peers were seeded into ([#101](https://github.com/WordPress/sync-storage/issues/101)) ([006b24f](https://github.com/WordPress/sync-storage/commit/006b24f2b93549fe13b160b455e8f2a46ff3e4ca))
+* make the Playground preview trigger match what it previews ([#100](https://github.com/WordPress/sync-storage/issues/100)) ([86b589d](https://github.com/WordPress/sync-storage/commit/86b589d0c3edce521a2970d03fa14baf55d095b4))
+
 ## [0.1.12](https://github.com/WordPress/sync-storage/compare/v0.1.11...v0.1.12) (2026-09-01)
 
 
