@@ -138,10 +138,10 @@ function sync_storage_collaboration_filter_supported() {
 /**
  * Warns when this Gutenberg build never calls __unstable_wp_sync_storage.
  *
- * The filter isn't in any tagged Gutenberg release yet, only trunk. Without
- * it, real-time collaboration silently falls back to Gutenberg's default
- * post meta storage: no error, no fatal, just every write going to the
- * exact cache-thrashing storage this plugin exists to replace.
+ * The filter arrived in Gutenberg 23.9.0. On anything older, real-time
+ * collaboration silently falls back to Gutenberg's default post meta
+ * storage: no error, no fatal, just every write going to the exact
+ * cache-thrashing storage this plugin exists to replace.
  */
 add_action(
 	'admin_notices',
@@ -152,7 +152,7 @@ add_action(
 
 		echo '<div class="notice notice-warning"><p>';
 		echo esc_html__(
-			"Sync Storage: this Gutenberg build doesn't call the __unstable_wp_sync_storage filter, so real-time collaboration is silently using Gutenberg's default post meta storage instead of this plugin's dedicated tables. The filter isn't in any tagged Gutenberg release yet; build Gutenberg from trunk to use the intended storage.",
+			"Sync Storage: this Gutenberg build doesn't call the __unstable_wp_sync_storage filter, so real-time collaboration is silently using Gutenberg's default post meta storage instead of this plugin's dedicated tables. Update Gutenberg to 23.9.0 or later to use the intended storage.",
 			'sync-storage'
 		);
 		echo '</p></div>';

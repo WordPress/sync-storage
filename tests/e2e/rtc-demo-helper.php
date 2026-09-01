@@ -52,24 +52,6 @@ function sync_storage_demo_refresh_awareness( $result, $server, $request ) {
 		}
 	}
 
-	if ( ! function_exists( 'wp_set_presence' ) ) {
-		preg_match( '/postType\/post:(\d+)/', $room, $matches );
-
-		if ( ! empty( $matches[1] ) ) {
-			$post_id = (int) $matches[1];
-
-			foreach ( $entries as &$entry ) {
-				$entry['updated_at'] = time();
-			}
-
-			update_post_meta(
-				$post_id,
-				'wp_sync_awareness_state',
-				wp_json_encode( $entries )
-			);
-		}
-	}
-
 	return $result;
 }
 add_filter( 'rest_pre_dispatch', 'sync_storage_demo_refresh_awareness', 10, 3 );
@@ -77,11 +59,12 @@ add_filter( 'rest_pre_dispatch', 'sync_storage_demo_refresh_awareness', 10, 3 );
 /**
  * Raise the max clients per room so the seeded peers do not block the viewer.
  *
- * The default ceiling is 3 (DEFAULT_CLIENT_LIMIT_PER_ROOM). With 5 seeded
- * collaborators, a real viewer cannot connect unless the limit is raised.
+ * The default ceiling is 3 (DEFAULT_CLIENT_LIMIT_PER_ROOM). The seeded peers
+ * count against it, so a real viewer cannot connect unless it is raised above
+ * the largest blueprint's seed count.
  */
 function sync_storage_demo_raise_client_limit() {
-	$script = "wp.hooks.addFilter( 'sync.pollingProvider.maxClientsPerRoom', 'sync-storage-demo', () => 20 );";
+	$script = "wp.hooks.addFilter( 'sync.pollingProvider.maxClientsPerRoom', 'sync-storage-demo', () => 50 );";
 
 	wp_enqueue_script( 'sync-storage-demo-client-limit', '', array( 'wp-hooks' ), false, true );
 	wp_add_inline_script( 'sync-storage-demo-client-limit', $script );

@@ -10,7 +10,7 @@ Storage layer for Gutenberg's real-time collaborative editing.
 > [!IMPORTANT]
 > **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services. Anything a managed host offers on top is a bonus, never a dependency. See [Requirements](#requirements).
 
-No tagged Gutenberg release carries the `__unstable_wp_sync_storage` filter yet, so the Playground demo boots all three plugins and warns in wp-admin rather than showing the storage swap. [Run locally](#run-locally) against trunk to see the real thing.
+The `__unstable_wp_sync_storage` filter this plugin hooks arrived in Gutenberg 23.9.0. On anything older the plugin activates but never takes over, and collaboration silently stays on post meta — wp-admin says so in a notice. The Playground demo installs Gutenberg from a GitHub release asset for that reason, not from wordpress.org.
 
 ## Problem
 

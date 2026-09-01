@@ -19,9 +19,8 @@ artifacts
 build
 gutenberg
 blueprint.json
-blueprint-collab.json
-blueprint-stock.json
-blueprint-stock-collab.json
+blueprint-5.json
+blueprint-40.json
 codecov.yml
 CHANGELOG.md
 README.md
