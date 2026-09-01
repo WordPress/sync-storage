@@ -138,9 +138,35 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 		}
 
 		// Each entry in awareness: {client_id, state, updated_at, wp_user_id}
+		//
+		// The sync server hands over the whole merged room on every poll: the
+		// polling client's entry, freshly stamped, and every other client's
+		// passed through untouched. Only the freshest are this request's to
+		// write; the rest belong to clients that refresh their own rows on
+		// their own polls.
+		//
+		// Writing them all costs an upsert per client per poll, and because
+		// wp_set_presence() takes no timestamp and stamps date_gmt to now, it
+		// also resets an age its owner is no longer refreshing, keeping a
+		// departed collaborator in the room.
+		//
+		// Entries without a timestamp are written, so an unexpected shape
+		// stores rather than vanishes.
+		$latest = 0;
+
+		foreach ( $awareness as $entry ) {
+			if ( isset( $entry['updated_at'] ) ) {
+				$latest = max( $latest, (int) $entry['updated_at'] );
+			}
+		}
+
 		// Transform to presence-api format and store each client.
 		foreach ( $awareness as $entry ) {
 			if ( ! isset( $entry['client_id'], $entry['wp_user_id'] ) ) {
+				continue;
+			}
+
+			if ( isset( $entry['updated_at'] ) && (int) $entry['updated_at'] < $latest ) {
 				continue;
 			}
 

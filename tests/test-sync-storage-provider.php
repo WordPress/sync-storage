@@ -294,6 +294,120 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test only the polling client's entry is written, not the whole room.
+	 *
+	 * WP_HTTP_Polling_Sync_Server::process_awareness_update() hands storage the
+	 * merged room every poll: the caller's entry freshly stamped, everyone
+	 * else's passed through untouched. Writing all of them turns one poll into
+	 * N upserts, which at the one-second collaborator interval is the
+	 * difference between thousands and tens of thousands of writes an hour.
+	 *
+	 * @covers Sync_Storage_Provider::set_awareness_state
+	 */
+	public function test_awareness_writes_only_the_freshest_entries() {
+		if ( ! function_exists( 'wp_set_presence' ) ) {
+			$this->markTestSkipped( 'Presence API not available' );
+		}
+
+		$user_id = get_current_user_id();
+		$now     = time();
+
+		$this->provider->set_awareness_state(
+			$this->room,
+			array(
+				array(
+					'client_id'  => 1111,
+					'state'      => array( 'cursor' => 1 ),
+					'updated_at' => $now,
+					'wp_user_id' => $user_id,
+				),
+				array(
+					'client_id'  => 2222,
+					'state'      => array( 'cursor' => 2 ),
+					'updated_at' => $now - 20,
+					'wp_user_id' => $user_id,
+				),
+			)
+		);
+
+		$retrieved  = $this->provider->get_awareness_state( $this->room );
+		$client_ids = wp_list_pluck( $retrieved, 'client_id' );
+
+		$this->assertSame( array( 1111 ), $client_ids, 'A passed-through entry was written as if it were ours.' );
+	}
+
+	/**
+	 * Test relaying another client's entry does not refresh its row.
+	 *
+	 * wp_set_presence() takes no timestamp and stamps date_gmt to now, so a
+	 * passed-through entry written back reads as freshly active. Every client
+	 * still polling would hold a departed one in the room, and nothing would
+	 * reach the sync server's AWARENESS_TIMEOUT.
+	 *
+	 * @covers Sync_Storage_Provider::set_awareness_state
+	 */
+	public function test_relayed_entries_keep_aging() {
+		if ( ! function_exists( 'wp_set_presence' ) ) {
+			$this->markTestSkipped( 'Presence API not available' );
+		}
+
+		global $wpdb;
+
+		$user_id = get_current_user_id();
+
+		// The departing client's own last poll.
+		$this->provider->set_awareness_state(
+			$this->room,
+			array(
+				array(
+					'client_id'  => 2222,
+					'state'      => array( 'cursor' => 2 ),
+					'updated_at' => time(),
+					'wp_user_id' => $user_id,
+				),
+			)
+		);
+
+		// Age it 40s: past the sync server's 30s timeout, inside Presence's TTL
+		// so the row is still readable.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->presence} SET date_gmt = %s WHERE room = %s AND client_id = %s",
+				gmdate( 'Y-m-d H:i:s', time() - 40 ),
+				$this->room,
+				'sync-2222'
+			)
+		);
+
+		$aged = $this->provider->get_awareness_state( $this->room )[0]['updated_at'];
+
+		// Another client polls, relaying the aged entry back as the server does.
+		$this->provider->set_awareness_state(
+			$this->room,
+			array(
+				array(
+					'client_id'  => 1111,
+					'state'      => array( 'cursor' => 1 ),
+					'updated_at' => time(),
+					'wp_user_id' => $user_id,
+				),
+				array(
+					'client_id'  => 2222,
+					'state'      => array( 'cursor' => 2 ),
+					'updated_at' => $aged,
+					'wp_user_id' => $user_id,
+				),
+			)
+		);
+
+		$entries = wp_list_pluck( $this->provider->get_awareness_state( $this->room ), 'updated_at', 'client_id' );
+
+		$this->assertSame( $aged, $entries[2222], 'Another client\'s poll reset a departed collaborator\'s age.' );
+		$this->assertGreaterThanOrEqual( 30, time() - $entries[2222], 'The relayed entry no longer reads as expired.' );
+	}
+
+	/**
 	 * Test awareness state is gated by the same permission check as updates.
 	 *
 	 * @covers Sync_Storage_Provider::set_awareness_state
