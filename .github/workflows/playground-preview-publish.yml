@@ -1,0 +1,286 @@
+name: Playground Preview Publish
+
+# Runs in the base-repo context (via `workflow_run`) so it has write
+# access even for PRs from forks. Downloads the build artifacts from
+# the triggering workflow, pushes them to a per-PR `preview-pr-N`
+# branch that raw.githubusercontent.com can serve to the browser, and
+# posts (or updates) the sticky Playground comment on the PR.
+#
+# Security model: every PR-derived input is untrusted.
+#   - `pr-meta.json` is parsed with jq and regex-validated; we never
+#     `source` it as shell.
+#   - The blueprint templates we encode into Playground URLs come from
+#     the base ref (this checkout), not from the PR. Only the asset URLs
+#     are rewritten in, and every one points at ${{ github.repository }},
+#     so a fork PR cannot redirect Playground.
+#   - Nothing reads `preview-pr-*`, so the branch is never executed.
+
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: ["Playground Preview"]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: write
+
+jobs:
+  publish:
+    if: >
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download artifacts from the triggering run
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const list = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            for (const name of ['release-assets', 'pr-meta']) {
+              const found = list.data.artifacts.find(a => a.name === name);
+              if (!found) {
+                core.setFailed(`Required artifact "${name}" not found on workflow run.`);
+                return;
+              }
+              const dl = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: found.id,
+                archive_format: 'zip',
+              });
+              fs.writeFileSync(`${name}.zip`, Buffer.from(dl.data));
+            }
+
+      - name: Unpack and validate artifacts
+        id: meta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          # The build runs untrusted PR code; the run's head SHA is the only
+          # trusted value.
+          TRUSTED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release-assets artifacts/pr-meta
+          unzip -q -o -d artifacts/release-assets release-assets.zip
+          unzip -q -o -d artifacts/pr-meta pr-meta.zip
+          test -f artifacts/release-assets/sync-storage.zip
+          test -f artifacts/release-assets/demo-seeder.php
+          test -f artifacts/release-assets/rtc-demo-helper.php
+          test -f artifacts/pr-meta/pr-meta.json
+
+          # Parse with jq and validate types. Never `source` the artifact.
+          META_HEAD_SHA=$(jq -r '.head_sha' artifacts/pr-meta/pr-meta.json)
+          [[ "$META_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "Invalid SHA in pr-meta: $META_HEAD_SHA"; exit 1; }
+
+          # Require pr-meta's SHA to match the triggering run.
+          if [[ "$META_HEAD_SHA" != "$TRUSTED_HEAD_SHA" ]]; then
+            echo "Refusing to publish: pr-meta head SHA ($META_HEAD_SHA) does not match the triggering run ($TRUSTED_HEAD_SHA)."
+            exit 1
+          fi
+
+          # Resolve the PR number from the trusted head SHA rather than the
+          # artifact-supplied value.
+          readarray -t _prs < <(
+            gh api "repos/${GH_REPO}/pulls?state=open&per_page=100" --paginate \
+              --jq '.[] | select(.head.sha == env.TRUSTED_HEAD_SHA) | .number'
+          )
+          PR_NUMBER="${_prs[0]:-}"
+
+          # A merged or superseded head has no comment left to post, and the push
+          # that superseded it is already building a preview of its own.
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::notice::No open pull request at head SHA $TRUSTED_HEAD_SHA; nothing to publish."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "PR_NUMBER=$PR_NUMBER"
+            echo "HEAD_SHA=$TRUSTED_HEAD_SHA"
+          } >> "$GITHUB_ENV"
+
+      # Playground fetches these from the browser. Release assets send no
+      # `Access-Control-Allow-Origin`; raw.githubusercontent.com does.
+      - name: Publish preview assets
+        if: ${{ steps.meta.outputs.skipped != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          BRANCH="preview-pr-${PR_NUMBER}"
+
+          # Force-pushed from a throwaway repo, so no preview blob reaches the
+          # history everyone clones. The SHA is a path component because raw
+          # caches by path.
+          mkdir -p "preview/${HEAD_SHA}"
+          cp artifacts/release-assets/* "preview/${HEAD_SHA}/"
+
+          cd preview
+          git init -q -b "$BRANCH"
+          git add -A
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -qm "Playground preview for PR #${PR_NUMBER} at ${HEAD_SHA}"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$BRANCH"
+
+      - name: Assemble Playground URLs from base-ref blueprints
+        id: playground
+        if: ${{ steps.meta.outputs.skipped != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Always the base repository, never the PR's head repository.
+          RAW="https://raw.githubusercontent.com/${REPO}/preview-pr-${PR_NUMBER}/${HEAD_SHA}"
+          PLUGIN_URL="${RAW}/sync-storage.zip"
+          SEEDER_URL="${RAW}/demo-seeder.php"
+          HELPER_URL="${RAW}/rtc-demo-helper.php"
+
+          # Gutenberg comes from a GitHub release asset, not wordpress.org.
+          # The wordpress.org build hardcodes WP_Sync_Post_Meta_Storage; the
+          # `__unstable_wp_sync_storage` filter this plugin hooks arrived
+          # after it, so on that build sync-storage activates and never takes
+          # over, and every cell of the grid would be post meta.
+          #
+          # Resolved at publish time rather than pinned, so the comment does
+          # not slowly start booting an older Gutenberg than the one the PR
+          # was written against. Pre-releases are eligible: RTC is behind an
+          # experiment flag and lands in RCs first.
+          GUTENBERG_URL=$(
+            gh api repos/WordPress/gutenberg/releases \
+              --jq 'map(select(.draft | not)) | .[0].assets[] | select(.name == "gutenberg.zip") | .browser_download_url' \
+              | head -n1
+          )
+          [ -n "$GUTENBERG_URL" ] || { echo "Could not resolve a gutenberg.zip release asset."; exit 1; }
+
+          # raw's CDN can lag the push by a few seconds.
+          for _ in $(seq 30); do
+            if curl -sf -o /dev/null "$PLUGIN_URL"; then
+              break
+            fi
+            sleep 2
+          done
+          curl -sf -o /dev/null "$PLUGIN_URL" \
+            || { echo "Preview assets never appeared at $PLUGIN_URL"; exit 1; }
+
+          # installPlugin and writeFile steps are matched by trailing path
+          # component, so each asset gets its own URL without depending on
+          # the order the steps appear in. The `gutenberg.zip` test has to
+          # come first: both it and the plugin are URL-resource installs, and
+          # rewriting Gutenberg's step with the plugin zip would install
+          # sync-storage twice and no editor.
+          transform() {
+            jq --arg plugin "$1" --arg seeder "$2" --arg helper "$3" --arg gutenberg "$4" '
+              .steps |= map(
+                if .step == "installPlugin" and (.pluginData.resource == "url") then
+                  if (.pluginData.url | endswith("/gutenberg.zip"))
+                  then .pluginData.url = $gutenberg
+                  else .pluginData.url = $plugin end
+                elif .step == "writeFile" and (.data.resource == "url") then
+                  if (.path | endswith("/demo-seeder.php")) then .data.url = $seeder
+                  elif (.path | endswith("/rtc-demo-helper.php")) then .data.url = $helper
+                  else . end
+                else . end
+              )
+            ' "$5"
+          }
+
+          BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint.json)
+          BLUEPRINT_COLLAB=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-collab.json)
+          BLUEPRINT_STOCK=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-stock.json)
+          BLUEPRINT_STOCK_COLLAB=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-stock-collab.json)
+
+          encode() { printf '%s' "$1" | base64 -w0; }
+
+          {
+            echo "url=https://playground.wordpress.net/#$(encode "$BLUEPRINT")"
+            echo "url_collab=https://playground.wordpress.net/#$(encode "$BLUEPRINT_COLLAB")"
+            echo "url_stock=https://playground.wordpress.net/#$(encode "$BLUEPRINT_STOCK")"
+            echo "url_stock_collab=https://playground.wordpress.net/#$(encode "$BLUEPRINT_STOCK_COLLAB")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post or update sticky comment
+        if: ${{ steps.meta.outputs.skipped != 'true' }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+          HEAD_SHA: ${{ env.HEAD_SHA }}
+          PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
+          PLAYGROUND_URL_COLLAB: ${{ steps.playground.outputs.url_collab }}
+          PLAYGROUND_URL_STOCK: ${{ steps.playground.outputs.url_stock }}
+          PLAYGROUND_URL_STOCK_COLLAB: ${{ steps.playground.outputs.url_stock_collab }}
+        with:
+          script: |
+            const marker = '<!-- sync-storage:playground-preview -->';
+            const url = process.env.PLAYGROUND_URL;
+            const urlCollab = process.env.PLAYGROUND_URL_COLLAB;
+            const urlStock = process.env.PLAYGROUND_URL_STOCK;
+            const urlStockCollab = process.env.PLAYGROUND_URL_STOCK_COLLAB;
+            const fullSha = process.env.HEAD_SHA;
+            const sha = fullSha.slice(0, 7);
+            const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const badge = 'https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white';
+
+            // GitHub renders the first column as plain cells, so a table gives a
+            // screen reader no row header; each link's alt text has to stand alone.
+            const launch = (href, label) => `[![${label}](${badge})](${href})`;
+
+            const body = [
+              marker,
+              '### 🛝 WordPress Playgrounds',
+              '',
+              // Below the heading so the sha keeps body weight, and in <samp>
+              // because GitHub chips `code` and the `tt` its own autolinker
+              // emits, which the timeline's sha links are not.
+              `Built from <a href="${commitUrl}"><samp>${sha}</samp></a>`,
+              '',
+              '|  | Solo | 5 collaborators |',
+              '| --- | --- | --- |',
+              `| **Sync Storage** | ${launch(url, 'Launch sync storage, solo')} | ${launch(urlCollab, 'Launch sync storage, 5 collaborators')} |`,
+              `| **Stock (post meta)** | ${launch(urlStock, 'Launch stock post meta, solo')} | ${launch(urlStockCollab, 'Launch stock post meta, 5 collaborators')} |`,
+              '',
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }

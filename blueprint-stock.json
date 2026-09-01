@@ -13,16 +13,6 @@
 		{
 			"step": "installPlugin",
 			"pluginData": {
-				"resource": "wordpress.org/plugins",
-				"slug": "presence-api"
-			},
-			"options": {
-				"activate": true
-			}
-		},
-		{
-			"step": "installPlugin",
-			"pluginData": {
 				"resource": "url",
 				"url": "https://github.com/WordPress/gutenberg/releases/download/v23.9.0-rc.1/gutenberg.zip"
 			},
@@ -31,14 +21,8 @@
 			}
 		},
 		{
-			"step": "installPlugin",
-			"pluginData": {
-				"resource": "url",
-				"url": "https://raw.githubusercontent.com/WordPress/sync-storage/preview-main/sync-storage.zip"
-			},
-			"options": {
-				"activate": true
-			}
+			"step": "runPHP",
+			"code": "<?php update_option( 'gutenberg-experiments', array( 'gutenberg-real-time-collaboration' => 1 ) );"
 		},
 		{
 			"step": "defineWpConfigConsts",

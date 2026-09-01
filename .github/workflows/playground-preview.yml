@@ -1,0 +1,139 @@
+name: Playground Preview
+
+# Builds `sync-storage.zip` from the PR commit and uploads it (plus the
+# demo seeder and a small metadata file) as workflow artifacts. The
+# sibling `Playground Preview Publish` workflow picks the artifacts up
+# on `workflow_run` and hosts them, so a preview always shows the PR's
+# own build at its latest commit.
+#
+# Release-please PRs included: nothing else verifies the staged version.
+
+on:
+  pull_request:
+    # Skip the obvious non-shippable surface. Docs, CI, tests — none of
+    # them change what a reviewer sees when they open the Playground
+    # link. A demo-seeder or workflow-only PR can fire the preview by
+    # hand via `workflow_dispatch` when there's a real need.
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only token. The build runs PR code, so it must be treated as
+# untrusted. Hosting and commenting happen in the sibling workflow_run
+# job under a base-repo token.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # PHP is here for `php -l` below, not for a build. composer.json
+      # declares no runtime dependency beyond php itself, and `.distignore`
+      # excludes `vendor`, so there is nothing to install.
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+
+      - name: Build sync-storage.zip
+        run: |
+          set -euo pipefail
+          mkdir -p build/sync-storage
+          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/sync-storage/
+          (cd build && zip -qr sync-storage.zip sync-storage/)
+
+      # Cheap smoke test: parse every PHP file in the staged plugin and
+      # confirm the entry file is present. Catches the regression class
+      # where `.distignore` drifts out of sync with `require_once`
+      # graphs — install succeeds but the plugin fatals on first hit.
+      - name: Smoke-test the build
+        run: |
+          set -euo pipefail
+          test -f build/sync-storage/sync-storage.php
+          find build/sync-storage -name '*.php' -print0 \
+            | xargs -0 -n1 -P 4 php -l > /dev/null
+
+      # Asserts each blueprint matches the shape the publish workflow
+      # rewrites. The counts differ per file, so they are declared per file
+      # rather than shared: the two stock blueprints install Gutenberg and
+      # nothing else, and only the collaborator blueprints write the demo
+      # files. A count that drifts from the publish workflow's `transform()`
+      # produces a Playground that boots the wrong code, silently.
+      #
+      # Fork PRs can't sneak in additional `installPlugin` steps that
+      # pull from attacker URLs because the publish workflow uses the
+      # BASE-REF blueprints, but this still catches accidental breakage.
+      - name: Schema-validate blueprints
+        run: |
+          set -euo pipefail
+          # file:expected url-installPlugin count:expected url-writeFile count
+          for spec in \
+            'blueprint.json:2:0' \
+            'blueprint-collab.json:2:2' \
+            'blueprint-stock.json:1:0' \
+            'blueprint-stock-collab.json:1:2'
+          do
+            f="${spec%%:*}"
+            rest="${spec#*:}"
+            want_install="${rest%%:*}"
+            want_write="${rest##*:}"
+
+            # This step is the base's, the checkout is the PR's head.
+            if [ ! -f "$f" ]; then
+              echo "::notice::$f is not on this branch, so nothing to validate."
+              continue
+            fi
+            jq -e \
+              --argjson install "$want_install" \
+              --argjson write "$want_write" '
+              (.steps | length > 0)
+              and (.steps | all(.step | IN("installPlugin", "writeFile", "runPHP", "defineWpConfigConsts")))
+              and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url")) | length == $install)
+              and (.steps | map(select(.step == "writeFile" and (.data.resource // "") == "url")) | length == $write)
+            ' "$f" > /dev/null
+          done
+
+      - name: Stage release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          cp build/sync-storage.zip release-assets/
+          cp tests/e2e/demo-seeder.php release-assets/
+          cp tests/e2e/rtc-demo-helper.php release-assets/
+
+      # PR metadata as JSON (no shell-`source` upstream). The publish
+      # workflow validates these fields with regex before using.
+      - name: Save PR metadata
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          jq -n \
+            --argjson pr "$PR_NUMBER" \
+            --arg sha "$HEAD_SHA" \
+            '{pr_number: $pr, head_sha: $sha}' > pr-meta.json
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-assets
+          path: release-assets/
+          retention-days: 14
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-meta
+          path: pr-meta.json
+          retention-days: 14
+          if-no-files-found: error
