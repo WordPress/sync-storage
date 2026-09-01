@@ -96,16 +96,27 @@ function sync_storage_demo_seed( int $count, int $offset = 0 ): array {
 		$user      = get_userdata( $user_id );
 		$client_id = 1000 + $index;
 
+		/*
+		 * Nested under collaboratorInfo, not flat.
+		 *
+		 * The editor reads state.collaboratorInfo and runs it through
+		 * isCollaboratorInfo(); a state that fails the check is dropped with
+		 * no error. Presence stores whatever it is handed and the plugin
+		 * passes it through untouched, so a flat shape survives every layer
+		 * between here and the editor and then disappears silently.
+		 */
 		$state = array(
-			'id'          => $user_id,
-			'name'        => $user->display_name,
-			'slug'        => $user->user_nicename,
-			'browserType' => 'Chrome',
-			'enteredAt'   => time() * 1000,
-			'avatar_urls' => array(
-				'96' => get_avatar_url(
-					$user_id,
-					array( 'size' => 96 )
+			'collaboratorInfo' => array(
+				'id'          => $user_id,
+				'name'        => $user->display_name,
+				'slug'        => $user->user_nicename,
+				'browserType' => 'Chrome',
+				'enteredAt'   => time() * 1000,
+				'avatar_urls' => array(
+					'96' => get_avatar_url(
+						$user_id,
+						array( 'size' => 96 )
+					),
 				),
 			),
 		);
@@ -131,6 +142,7 @@ function sync_storage_demo_seed( int $count, int $offset = 0 ): array {
 		'sync_storage_demo_entries',
 		array(
 			'room'    => $room,
+			'post_id' => $post_id,
 			'entries' => $entries,
 		)
 	);

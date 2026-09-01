@@ -204,9 +204,9 @@ jobs:
             ' "$5"
           }
 
-          BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint.json)
-          BLUEPRINT_5=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-5.json)
-          BLUEPRINT_40=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-40.json)
+          BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" demo/blueprint.json)
+          BLUEPRINT_5=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" demo/blueprint-5.json)
+          BLUEPRINT_40=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" demo/blueprint-40.json)
 
           encode() { printf '%s' "$1" | base64 -w0; }
 

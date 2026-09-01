@@ -1,7 +1,7 @@
 # Sync Storage
 
 [![CI](https://github.com/WordPress/sync-storage/actions/workflows/ci.yml/badge.svg)](https://github.com/WordPress/sync-storage/actions/workflows/ci.yml)
-[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/sync-storage/main/blueprint.json)
+[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/sync-storage/main/demo/blueprint.json)
 
 > **Status:** Experimental feature plugin
 
