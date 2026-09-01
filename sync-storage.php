@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Throwaway edit so this PR is outside `paths-ignore`. Do not merge.
 define( 'WP_SYNC_STORAGE_VERSION', '0.1.12' );
 define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
 define( 'WP_SYNC_STORAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
