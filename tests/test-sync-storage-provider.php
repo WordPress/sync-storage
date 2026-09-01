@@ -294,6 +294,41 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test wp_user_id is an int, as the sync server compares it strictly.
+	 *
+	 * WP_HTTP_Polling_Sync_Server::check_permissions() rejects a poll whose
+	 * client_id is already held under a different wp_user_id, comparing with
+	 * !== against get_current_user_id(). The database hands user_id back as a
+	 * string, so an uncast value makes every client fail that check against its
+	 * own entry: the first poll into an empty room succeeds and every poll
+	 * after it is a 403.
+	 *
+	 * @covers Sync_Storage_Provider::get_awareness_state
+	 */
+	public function test_awareness_wp_user_id_is_an_int() {
+		if ( ! function_exists( 'wp_set_presence' ) ) {
+			$this->markTestSkipped( 'Presence API not available' );
+		}
+
+		$user_id = get_current_user_id();
+
+		$this->provider->set_awareness_state(
+			$this->room,
+			array(
+				array(
+					'client_id'  => 4033094322,
+					'state'      => array( 'cursor' => 10 ),
+					'wp_user_id' => $user_id,
+				),
+			)
+		);
+
+		$entry = $this->provider->get_awareness_state( $this->room )[0];
+
+		$this->assertSame( $user_id, $entry['wp_user_id'], 'wp_user_id does not round trip as an int.' );
+	}
+
+	/**
 	 * Test only the polling client's entry is written, not the whole room.
 	 *
 	 * WP_HTTP_Polling_Sync_Server::process_awareness_update() hands storage the
