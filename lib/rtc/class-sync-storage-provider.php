@@ -92,9 +92,10 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 
 		// Transform our own presence entries to Gutenberg awareness format.
 		// Gutenberg expects: [ {client_id, state, updated_at, wp_user_id}, ... ].
-		// client_id is the Yjs client ID as an int, which the sync server
-		// compares strictly against the polling client's own. updated_at is a
-		// Unix timestamp, which it subtracts from time() to expire an entry;
+		// client_id and wp_user_id are ints, which the sync server compares
+		// strictly against the polling client's own and get_current_user_id();
+		// the database hands both back as strings. updated_at is a Unix
+		// timestamp, which it subtracts from time() to expire an entry;
 		// Presence stores a GMT datetime string.
 		$awareness = array();
 
@@ -107,7 +108,7 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 				'client_id'  => (int) substr( $entry->client_id, strlen( self::CLIENT_PREFIX ) ),
 				'state'      => $entry->data,
 				'updated_at' => strtotime( $entry->date_gmt . ' UTC' ),
-				'wp_user_id' => $entry->user_id,
+				'wp_user_id' => (int) $entry->user_id,
 			);
 		}
 
