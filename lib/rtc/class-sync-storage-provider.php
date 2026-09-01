@@ -54,12 +54,27 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 	 * @return bool True if user can collaborate in this room.
 	 */
 	private function validate_access( string $room ): bool {
-		if ( ! preg_match( '/^postType\/([a-z0-9_-]+):(\d+)$/i', $room, $matches ) ) {
+		// Defer to the sync server's own room grammar and capability map rather
+		// than restating them. The editor opens rooms beyond postType, such as
+		// root/comment, and a narrower rule here does not deny them quietly: a
+		// refused add_update() is a WP_Error, and the server abandons the whole
+		// batched poll on the first one, so a room we do not recognise takes
+		// the post room down with it.
+		if ( ! class_exists( 'WP_Sync_Config' ) ) {
 			return false;
 		}
 
-		$post_id = (int) $matches[2];
-		return current_user_can( 'edit_post', $post_id );
+		$parsed = WP_Sync_Config::parse_room( $room );
+
+		if ( null === $parsed ) {
+			return false;
+		}
+
+		return WP_Sync_Config::can_user_sync_entity_type(
+			$parsed['entity_kind'],
+			$parsed['entity_name'],
+			$parsed['object_id']
+		);
 	}
 
 	/**
