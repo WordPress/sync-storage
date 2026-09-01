@@ -464,6 +464,47 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test rooms outside postType are admitted.
+	 *
+	 * The editor opens a room per entity it syncs, not only the post being
+	 * edited. Refusing one is not a quiet denial: add_update() returning false
+	 * becomes a WP_Error, and the sync server abandons the whole batched poll on
+	 * the first one, so an unrecognised room takes the post room down with it.
+	 *
+	 * @covers Sync_Storage_Provider::add_update
+	 */
+	public function test_add_update_admits_a_non_post_type_room() {
+		$this->assertTrue(
+			$this->provider->add_update( 'root/comment', array( 'data' => 'test update' ) ),
+			'A room the sync server permits was refused.'
+		);
+	}
+
+	/**
+	 * Test room access follows the sync server rather than a local rule.
+	 *
+	 * Access is delegated to WP_Sync_Config so the two cannot drift. These are
+	 * its answers, asserted here so a reintroduced local rule fails loudly
+	 * rather than by 500ing a poll.
+	 *
+	 * @covers Sync_Storage_Provider::add_update
+	 */
+	public function test_add_update_refuses_a_room_the_sync_server_refuses() {
+		$this->assertFalse(
+			$this->provider->add_update( 'not-a-room', array( 'data' => 'test update' ) ),
+			'A room with no entity kind was admitted.'
+		);
+		$this->assertFalse(
+			$this->provider->add_update( 'postType/post:0', array( 'data' => 'test update' ) ),
+			'A room with a zero object ID was admitted.'
+		);
+		$this->assertFalse(
+			$this->provider->add_update( "taxonomy/category:{$this->post_id}", array( 'data' => 'test update' ) ),
+			'A term room naming a post ID was admitted.'
+		);
+	}
+
+	/**
 	 * Test that stored timestamps are milliseconds, not seconds.
 	 *
 	 * Cleanup's cutoff is computed in milliseconds (matching Yjs). Storing
