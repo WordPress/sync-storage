@@ -44,11 +44,18 @@ function sync_storage_demo_open_seeded_post() {
 add_action( 'admin_init', 'sync_storage_demo_open_seeded_post' );
 
 /**
- * Re-stamp seeded awareness entries on every sync poll.
+ * Re-stamp seeded awareness entries before the sync server expires them.
  *
- * The sync server drops entries older than 30 seconds (WP_HTTP_Polling_Sync_Server::AWARENESS_TIMEOUT).
- * Seeded collaborators are faked peers with no polling client refreshing their
- * own state, so without this they vanish after half a minute.
+ * The server drops entries older than AWARENESS_TIMEOUT. Seeded collaborators
+ * are faked peers with no polling client refreshing their own state, so
+ * without this they vanish once that elapses.
+ *
+ * Throttled, because the poll runs about once a second and the 40-collaborator
+ * cell would otherwise do 40 presence writes per request. That is load no real
+ * room of that size generates -- each of those peers would be refreshing only
+ * its own entry -- and it would show up as the demo being slower than the
+ * architecture it is demonstrating. One batch per interval is enough to keep
+ * every entry inside the window.
  *
  * @param mixed           $result  Response to return (unmodified).
  * @param WP_REST_Server  $server  Server instance.
@@ -65,6 +72,23 @@ function sync_storage_demo_refresh_awareness( $result, $server, $request ) {
 	if ( ! $demo || ! isset( $demo['room'], $demo['entries'] ) ) {
 		return $result;
 	}
+
+	// Read from the server rather than repeating its number, so a change there
+	// cannot leave the demo re-stamping too late to matter.
+	$timeout = defined( 'WP_HTTP_Polling_Sync_Server::AWARENESS_TIMEOUT' )
+		? (int) WP_HTTP_Polling_Sync_Server::AWARENESS_TIMEOUT
+		: 30;
+
+	// A third of the window in hand covers a slow request landing between two
+	// re-stamps.
+	$interval = max( 1, (int) floor( $timeout * 2 / 3 ) );
+	$last     = (int) get_option( 'sync_storage_demo_last_refresh', 0 );
+
+	if ( time() - $last < $interval ) {
+		return $result;
+	}
+
+	update_option( 'sync_storage_demo_last_refresh', time(), false );
 
 	$room    = $demo['room'];
 	$entries = $demo['entries'];
