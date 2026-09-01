@@ -12,6 +12,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Send the demo's landing page to the post the peers were seeded into.
+ *
+ * The blueprint cannot name that post. Which one gets seeded is decided
+ * while the seeder runs, long after the blueprint was written, so the
+ * landing page asks for the demo by name and this resolves it. Landing on
+ * post-new.php instead opens a fresh auto-draft, which is a different room
+ * from the seeded one: an empty editor with the peers nowhere in sight.
+ */
+function sync_storage_demo_open_seeded_post() {
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect, no state change.
+	if ( ! isset( $_GET['sync-storage-demo'] ) ) {
+		return;
+	}
+
+	$demo = get_option( 'sync_storage_demo_entries' );
+
+	if ( ! $demo || empty( $demo['post_id'] ) ) {
+		return;
+	}
+
+	$edit_link = get_edit_post_link( (int) $demo['post_id'], 'url' );
+
+	if ( ! $edit_link ) {
+		return;
+	}
+
+	wp_safe_redirect( $edit_link );
+	exit;
+}
+add_action( 'admin_init', 'sync_storage_demo_open_seeded_post' );
+
+/**
  * Re-stamp seeded awareness entries on every sync poll.
  *
  * The sync server drops entries older than 30 seconds (WP_HTTP_Polling_Sync_Server::AWARENESS_TIMEOUT).

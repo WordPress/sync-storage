@@ -131,6 +131,7 @@ function sync_storage_demo_seed( int $count, int $offset = 0 ): array {
 		'sync_storage_demo_entries',
 		array(
 			'room'    => $room,
+			'post_id' => $post_id,
 			'entries' => $entries,
 		)
 	);
