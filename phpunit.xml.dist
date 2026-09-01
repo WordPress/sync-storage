@@ -12,6 +12,9 @@
 		<testsuite name="sync-storage">
 			<directory suffix=".php">tests/</directory>
 			<exclude>tests/bootstrap.php</exclude>
+			<!-- Playwright specs and their mu-plugins; including them here loads
+			     a second copy of code already mapped into mu-plugins. -->
+			<exclude>tests/e2e</exclude>
 		</testsuite>
 	</testsuites>
 	<coverage>
