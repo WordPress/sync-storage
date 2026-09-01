@@ -42,11 +42,51 @@ const COLLABORATOR_PASSWORD = 'sync-storage-e2e-collaborator!1';
  *
  * @param args Arguments to pass to `wp`.
  */
-function wpCli(args: string[]): string {
+export function wpCli(args: string[]): string {
 	return execFileSync('npx', ['wp-env', 'run', 'cli', 'wp', ...args], {
 		encoding: 'utf-8',
 		stdio: ['ignore', 'pipe', 'ignore'],
 	});
+}
+
+/** One `/wp-sync/v1/updates` request, as recorded by the sync-query-counter mu-plugin. */
+export interface SyncQuerySample {
+	queries: number;
+	rooms: number;
+}
+
+/**
+ * Discard anything the counter recorded so far.
+ *
+ * Deleting an option that does not exist is a non-zero exit, which is the
+ * normal state on the first call of a run.
+ */
+export function resetQueryLog(): void {
+	try {
+		wpCli(['option', 'delete', 'sync_query_counter_log']);
+	} catch {
+		// Nothing recorded yet.
+	}
+}
+
+/**
+ * Read the queries recorded for each sync request since the last reset.
+ */
+export function readQueryLog(): SyncQuerySample[] {
+	let raw: string;
+
+	try {
+		raw = wpCli([
+			'option',
+			'get',
+			'sync_query_counter_log',
+			'--format=json',
+		]).trim();
+	} catch {
+		return [];
+	}
+
+	return raw ? JSON.parse(raw) : [];
 }
 
 /**
