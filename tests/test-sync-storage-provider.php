@@ -472,6 +472,7 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	 * the first one, so an unrecognised room takes the post room down with it.
 	 *
 	 * @covers Sync_Storage_Provider::add_update
+	 * @covers Sync_Storage_Provider::validate_access
 	 */
 	public function test_add_update_admits_a_non_post_type_room() {
 		$this->assertTrue(
@@ -488,6 +489,7 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	 * rather than by 500ing a poll.
 	 *
 	 * @covers Sync_Storage_Provider::add_update
+	 * @covers Sync_Storage_Provider::validate_access
 	 */
 	public function test_add_update_refuses_a_room_the_sync_server_refuses() {
 		$this->assertFalse(
