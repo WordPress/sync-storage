@@ -14,9 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Seed demo collaborators into a post's awareness state.
  *
- * Creates users and writes their awareness entries via both Presence API and
- * stock post meta, so the same seeder serves both sync-storage and stock
- * Gutenberg blueprints.
+ * Creates users and writes their awareness entries through Presence API, which
+ * is where sync-storage delegates awareness. The room and entries are also
+ * stored in an option so the demo helper can re-stamp them past the server's
+ * awareness timeout.
  *
  * @param int $count  Number of collaborators to seed.
  * @param int $offset Starting index for deterministic naming.
@@ -124,14 +125,6 @@ function sync_storage_demo_seed( int $count, int $offset = 0 ): array {
 				$user_id
 			);
 		}
-	}
-
-	if ( ! function_exists( 'wp_set_presence' ) ) {
-		update_post_meta(
-			$post_id,
-			'wp_sync_awareness_state',
-			wp_json_encode( $entries )
-		);
 	}
 
 	update_option(

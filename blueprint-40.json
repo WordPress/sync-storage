@@ -13,6 +13,16 @@
 		{
 			"step": "installPlugin",
 			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "presence-api"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
 				"resource": "url",
 				"url": "https://github.com/WordPress/gutenberg/releases/download/v23.9.0-rc.1/gutenberg.zip"
 			},
@@ -21,8 +31,14 @@
 			}
 		},
 		{
-			"step": "runPHP",
-			"code": "<?php update_option( 'gutenberg-experiments', array( 'gutenberg-real-time-collaboration' => 1 ) );"
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/sync-storage/preview-main/sync-storage.zip"
+			},
+			"options": {
+				"activate": true
+			}
 		},
 		{
 			"step": "defineWpConfigConsts",
@@ -34,7 +50,7 @@
 		},
 		{
 			"step": "writeFile",
-			"path": "/wordpress/wp-content/mu-plugins/demo-seeder.php",
+			"path": "/wordpress/wp-content/plugins/sync-storage/demo-seeder.php",
 			"data": {
 				"resource": "url",
 				"url": "https://raw.githubusercontent.com/WordPress/sync-storage/main/tests/e2e/demo-seeder.php"
@@ -50,7 +66,7 @@
 		},
 		{
 			"step": "runPHP",
-			"code": "<?php require_once '/wordpress/wp-load.php'; require_once '/wordpress/wp-content/mu-plugins/demo-seeder.php'; sync_storage_demo_seed( 5 );"
+			"code": "<?php require_once '/wordpress/wp-load.php'; require_once '/wordpress/wp-content/plugins/sync-storage/demo-seeder.php'; sync_storage_demo_seed( 40 );"
 		}
 	]
 }

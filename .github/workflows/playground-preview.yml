@@ -66,10 +66,10 @@ jobs:
 
       # Asserts each blueprint matches the shape the publish workflow
       # rewrites. The counts differ per file, so they are declared per file
-      # rather than shared: the two stock blueprints install Gutenberg and
-      # nothing else, and only the collaborator blueprints write the demo
-      # files. A count that drifts from the publish workflow's `transform()`
-      # produces a Playground that boots the wrong code, silently.
+      # rather than shared: only the collaborator blueprints write the demo
+      # seeder and helper. A count that drifts from the publish workflow's
+      # `transform()` produces a Playground that boots the wrong code,
+      # silently.
       #
       # Fork PRs can't sneak in additional `installPlugin` steps that
       # pull from attacker URLs because the publish workflow uses the
@@ -80,9 +80,8 @@ jobs:
           # file:expected url-installPlugin count:expected url-writeFile count
           for spec in \
             'blueprint.json:2:0' \
-            'blueprint-collab.json:2:2' \
-            'blueprint-stock.json:1:0' \
-            'blueprint-stock-collab.json:1:2'
+            'blueprint-5.json:2:2' \
+            'blueprint-40.json:2:2'
           do
             f="${spec%%:*}"
             rest="${spec#*:}"

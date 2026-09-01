@@ -205,17 +205,15 @@ jobs:
           }
 
           BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint.json)
-          BLUEPRINT_COLLAB=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-collab.json)
-          BLUEPRINT_STOCK=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-stock.json)
-          BLUEPRINT_STOCK_COLLAB=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-stock-collab.json)
+          BLUEPRINT_5=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-5.json)
+          BLUEPRINT_40=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" "$GUTENBERG_URL" blueprint-40.json)
 
           encode() { printf '%s' "$1" | base64 -w0; }
 
           {
             echo "url=https://playground.wordpress.net/#$(encode "$BLUEPRINT")"
-            echo "url_collab=https://playground.wordpress.net/#$(encode "$BLUEPRINT_COLLAB")"
-            echo "url_stock=https://playground.wordpress.net/#$(encode "$BLUEPRINT_STOCK")"
-            echo "url_stock_collab=https://playground.wordpress.net/#$(encode "$BLUEPRINT_STOCK_COLLAB")"
+            echo "url_5=https://playground.wordpress.net/#$(encode "$BLUEPRINT_5")"
+            echo "url_40=https://playground.wordpress.net/#$(encode "$BLUEPRINT_40")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post or update sticky comment
@@ -225,24 +223,23 @@ jobs:
           PR_NUMBER: ${{ env.PR_NUMBER }}
           HEAD_SHA: ${{ env.HEAD_SHA }}
           PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
-          PLAYGROUND_URL_COLLAB: ${{ steps.playground.outputs.url_collab }}
-          PLAYGROUND_URL_STOCK: ${{ steps.playground.outputs.url_stock }}
-          PLAYGROUND_URL_STOCK_COLLAB: ${{ steps.playground.outputs.url_stock_collab }}
+          PLAYGROUND_URL_5: ${{ steps.playground.outputs.url_5 }}
+          PLAYGROUND_URL_40: ${{ steps.playground.outputs.url_40 }}
         with:
           script: |
             const marker = '<!-- sync-storage:playground-preview -->';
             const url = process.env.PLAYGROUND_URL;
-            const urlCollab = process.env.PLAYGROUND_URL_COLLAB;
-            const urlStock = process.env.PLAYGROUND_URL_STOCK;
-            const urlStockCollab = process.env.PLAYGROUND_URL_STOCK_COLLAB;
+            const url5 = process.env.PLAYGROUND_URL_5;
+            const url40 = process.env.PLAYGROUND_URL_40;
             const fullSha = process.env.HEAD_SHA;
             const sha = fullSha.slice(0, 7);
             const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
             const badge = 'https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white';
 
-            // GitHub renders the first column as plain cells, so a table gives a
-            // screen reader no row header; each link's alt text has to stand alone.
+            // Every cell holds the same badge image, so the column header is the
+            // only thing telling them apart; each link's alt text has to say
+            // which one it is on its own.
             const launch = (href, label) => `[![${label}](${badge})](${href})`;
 
             const body = [
@@ -254,10 +251,9 @@ jobs:
               // emits, which the timeline's sha links are not.
               `Built from <a href="${commitUrl}"><samp>${sha}</samp></a>`,
               '',
-              '|  | Solo | 5 collaborators |',
+              '| Solo | 5 collaborators | 40 collaborators |',
               '| --- | --- | --- |',
-              `| **Sync Storage** | ${launch(url, 'Launch sync storage, solo')} | ${launch(urlCollab, 'Launch sync storage, 5 collaborators')} |`,
-              `| **Stock (post meta)** | ${launch(urlStock, 'Launch stock post meta, solo')} | ${launch(urlStockCollab, 'Launch stock post meta, 5 collaborators')} |`,
+              `| ${launch(url, 'Launch solo')} | ${launch(url5, 'Launch with 5 collaborators')} | ${launch(url40, 'Launch with 40 collaborators')} |`,
               '',
             ].join('\n');
 
