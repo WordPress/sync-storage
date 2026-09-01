@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.12](https://github.com/WordPress/sync-storage/compare/v0.1.11...v0.1.12) (2026-09-01)
+
+
+### Features
+
+* add Playground preview grid for pull requests ([#96](https://github.com/WordPress/sync-storage/issues/96)) ([ab02085](https://github.com/WordPress/sync-storage/commit/ab02085469707f9ae1f3b930725d2dbda356fc61))
+
+
+### Bug Fixes
+
+* cast wp_user_id to int in awareness state ([#93](https://github.com/WordPress/sync-storage/issues/93)) ([0cd637d](https://github.com/WordPress/sync-storage/commit/0cd637d412c9a7c77852047ef638fd9dda535536))
+* defer room access to the sync server's own grammar ([#94](https://github.com/WordPress/sync-storage/issues/94)) ([83cae61](https://github.com/WordPress/sync-storage/commit/83cae610ff7c0e2ece7cc2a3d6137e1c242c9f01))
+* stamp awareness with a real timestamp so the editor keeps it ([#89](https://github.com/WordPress/sync-storage/issues/89)) ([d9201aa](https://github.com/WordPress/sync-storage/commit/d9201aa4972abfdeba22a54c88584f20d6165d8a))
+* write only the polling client's awareness entry ([#91](https://github.com/WordPress/sync-storage/issues/91)) ([53b2b86](https://github.com/WordPress/sync-storage/commit/53b2b86553565d9e874b25c0521f453a57a201c4))
+
 ## [0.1.11](https://github.com/WordPress/sync-storage/compare/v0.1.10...v0.1.11) (2026-08-29)
 
 
