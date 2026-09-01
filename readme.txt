@@ -4,7 +4,7 @@ Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.11
+Stable tag: 0.1.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,13 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.12 =
+* Feature: add Playground preview grid for pull requests
+* Fix: cast wp_user_id to int in awareness state
+* Fix: defer room access to the sync server's own grammar
+* Fix: stamp awareness with a real timestamp so the editor keeps it
+* Fix: write only the polling client's awareness entry
+
 = 0.1.11 =
 * Fix: drop the post meta migration that never migrated anything
 
@@ -92,6 +99,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Fix: provision existing sites on network activation
 * Fix: stop writing the post meta flag nothing reads
 * Fix: strip closes clauses when generating readme.txt's changelog
-
-= 0.1.7 =
-* Fix: bound Playwright browser install with a timeout and retry
