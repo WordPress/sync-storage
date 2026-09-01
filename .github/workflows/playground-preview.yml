@@ -6,18 +6,30 @@ name: Playground Preview
 # on `workflow_run` and hosts them, so a preview always shows the PR's
 # own build at its latest commit.
 #
-# Release-please PRs included: nothing else verifies the staged version.
+# Not release-please PRs, though the build below still runs on them.
+# Release-please opens and pushes its branch with GITHUB_TOKEN, and
+# GitHub does not cascade `workflow_run` from events that token
+# produced, so the publish job never fires and no comment is posted.
+# Giving release-please a PAT or App token is what would change that.
 
 on:
   pull_request:
-    # Skip the obvious non-shippable surface. Docs, CI, tests — none of
-    # them change what a reviewer sees when they open the Playground
-    # link. A demo-seeder or workflow-only PR can fire the preview by
-    # hand via `workflow_dispatch` when there's a real need.
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
-      - 'tests/**'
+    # Everything that changes what a reviewer sees in the booted site.
+    # Negations apply in order, so the last three add back files that do
+    # affect the preview but sit under a directory the line above drops:
+    # these two workflows decide what the comment contains, and the demo
+    # seeder and helper are written into the collaborator cells.
+    paths:
+      - '**'
+      - '!**.md'
+      - '!.github/**'
+      - '!tests/**'
+      - '.github/workflows/playground-preview.yml'
+      - '.github/workflows/playground-preview-publish.yml'
+      - 'tests/e2e/demo-seeder.php'
+      - 'tests/e2e/rtc-demo-helper.php'
+  # Builds and validates without publishing: the publish job only accepts
+  # `pull_request` runs, since it resolves the PR from the head SHA.
   workflow_dispatch:
 
 concurrency:
@@ -112,11 +124,13 @@ jobs:
           cp tests/e2e/rtc-demo-helper.php release-assets/
 
       # PR metadata as JSON (no shell-`source` upstream). The publish
-      # workflow validates these fields with regex before using.
+      # workflow validates these fields with regex before using. The
+      # fallbacks keep `jq --argjson` fed on `workflow_dispatch`, where
+      # there is no pull request in the payload.
       - name: Save PR metadata
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           jq -n \
             --argjson pr "$PR_NUMBER" \
