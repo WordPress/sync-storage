@@ -16,6 +16,7 @@ test-results
 playwright-report
 artifacts
 build
+docs
 gutenberg
 blueprint.json
 codecov.yml

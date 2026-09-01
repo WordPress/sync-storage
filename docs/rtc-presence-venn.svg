@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="900" height="560" fill="#ffffff"/>
+
+  <circle cx="330" cy="290" r="230" fill="#4A7FD4" fill-opacity="0.28" stroke="#2D5AA6" stroke-width="2"/>
+  <circle cx="570" cy="290" r="230" fill="#4CA361" fill-opacity="0.28" stroke="#2F7943" stroke-width="2"/>
+
+  <text x="215" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#2D5AA6" letter-spacing="0.6">GUTENBERG SYNC</text>
+  <text x="680" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#2F7943" letter-spacing="0.6">PRESENCE API</text>
+
+  <text x="215" y="185" text-anchor="middle" font-size="11" font-weight="700" fill="#57606A" letter-spacing="1.4">ONLY HERE</text>
+  <text x="215" y="222" text-anchor="middle" font-size="14" fill="#1F2328">CRDT update log</text>
+  <text x="215" y="248" text-anchor="middle" font-size="14" fill="#1F2328">compaction</text>
+  <text x="215" y="274" text-anchor="middle" font-size="14" fill="#1F2328">cursor geometry</text>
+  <text x="215" y="300" text-anchor="middle" font-size="14" fill="#1F2328">join / leave notices</text>
+  <text x="215" y="326" text-anchor="middle" font-size="14" fill="#1F2328">disconnect modal</text>
+  <text x="215" y="352" text-anchor="middle" font-size="14" fill="#1F2328">client limit per room</text>
+  <text x="215" y="378" text-anchor="middle" font-size="14" fill="#1F2328">per-connection identity</text>
+
+  <text x="450" y="172" text-anchor="middle" font-size="11" font-weight="700" fill="#57606A" letter-spacing="1.4">BOTH</text>
+  <text x="450" y="208" text-anchor="middle" font-size="14" fill="#1F2328">room membership</text>
+  <text x="450" y="233" text-anchor="middle" font-size="14" fill="#1F2328">identity</text>
+  <text x="450" y="258" text-anchor="middle" font-size="14" fill="#1F2328">expiry</text>
+  <text x="450" y="283" text-anchor="middle" font-size="14" fill="#1F2328">idle backoff</text>
+  <text x="450" y="308" text-anchor="middle" font-size="14" fill="#1F2328">post lock</text>
+  <text x="450" y="333" text-anchor="middle" font-size="14" fill="#1F2328">room naming</text>
+  <text x="450" y="358" text-anchor="middle" font-size="14" fill="#1F2328">transport</text>
+
+  <text x="680" y="185" text-anchor="middle" font-size="11" font-weight="700" fill="#57606A" letter-spacing="1.4">ONLY HERE</text>
+  <text x="680" y="230" text-anchor="middle" font-size="14" fill="#1F2328">cross-tab read coalescing</text>
+  <text x="680" y="256" text-anchor="middle" font-size="14" fill="#1F2328">collaboration edge</text>
+  <text x="680" y="282" text-anchor="middle" font-size="14" fill="#1F2328">unchanged-payload skip</text>
+  <text x="680" y="308" text-anchor="middle" font-size="14" fill="#1F2328">TTL sweep cron</text>
+  <text x="680" y="334" text-anchor="middle" font-size="14" fill="#1F2328">user-keyed identity</text>
+  <text x="680" y="374" text-anchor="middle" font-size="12" font-style="italic" fill="#57606A">no equivalent in packages/sync</text>
+
+  <text x="450" y="546" text-anchor="middle" font-size="12" fill="#57606A">Shared concerns are implemented twice. Identity is keyed per connection on the left, per user on the right.</text>
+</svg>
