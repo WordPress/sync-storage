@@ -91,9 +91,9 @@ jobs:
           set -euo pipefail
           # file:expected url-installPlugin count:expected url-writeFile count
           for spec in \
-            'blueprint.json:2:0' \
-            'blueprint-5.json:2:2' \
-            'blueprint-40.json:2:2'
+            'demo/blueprint.json:2:0' \
+            'demo/blueprint-5.json:2:2' \
+            'demo/blueprint-40.json:2:2'
           do
             f="${spec%%:*}"
             rest="${spec#*:}"
@@ -120,8 +120,8 @@ jobs:
           set -euo pipefail
           mkdir -p release-assets
           cp build/sync-storage.zip release-assets/
-          cp tests/e2e/demo-seeder.php release-assets/
-          cp tests/e2e/rtc-demo-helper.php release-assets/
+          cp demo/demo-seeder.php release-assets/
+          cp demo/mu-plugins/rtc-demo-helper.php release-assets/
 
       # PR metadata as JSON (no shell-`source` upstream). The publish
       # workflow validates these fields with regex before using. The
