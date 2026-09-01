@@ -2,7 +2,6 @@
 .github
 .cache
 .claude
-.wordpress-org
 .env
 .gitignore
 .wp-env.json
@@ -18,9 +17,7 @@ playwright-report
 artifacts
 build
 gutenberg
-blueprint.json
-blueprint-5.json
-blueprint-40.json
+demo
 codecov.yml
 CHANGELOG.md
 README.md

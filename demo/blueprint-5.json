@@ -53,7 +53,7 @@
 			"path": "/wordpress/wp-content/plugins/sync-storage/demo-seeder.php",
 			"data": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/WordPress/sync-storage/main/tests/e2e/demo-seeder.php"
+				"url": "https://raw.githubusercontent.com/WordPress/sync-storage/main/demo/demo-seeder.php"
 			}
 		},
 		{
@@ -61,7 +61,7 @@
 			"path": "/wordpress/wp-content/mu-plugins/rtc-demo-helper.php",
 			"data": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/WordPress/sync-storage/main/tests/e2e/rtc-demo-helper.php"
+				"url": "https://raw.githubusercontent.com/WordPress/sync-storage/main/demo/mu-plugins/rtc-demo-helper.php"
 			}
 		},
 		{
