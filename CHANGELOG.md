@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/WordPress/sync-storage/compare/v0.1.13...v0.1.14) (2026-09-02)
+
+
+### Features
+
+* install the Gutenberg 23.9.0 release instead of building trunk ([#104](https://github.com/WordPress/sync-storage/issues/104)) ([b583039](https://github.com/WordPress/sync-storage/commit/b5830399ea77c6d82dced9c7a41e391c0116fe58))
+
 ## [0.1.13](https://github.com/WordPress/sync-storage/compare/v0.1.12...v0.1.13) (2026-09-01)
 
 

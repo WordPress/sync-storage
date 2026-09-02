@@ -4,7 +4,7 @@ Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.13
+Stable tag: 0.1.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,9 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.14 =
+* Feature: install the Gutenberg 23.9.0 release instead of building trunk
+
 = 0.1.13 =
 * Feature: make the Playground grid three collaborator counts
 * Fix: land the Playground demo in the room the peers were seeded into
@@ -90,6 +93,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Fix: register the deactivation hook above the dependency guards
 * Fix: scope the Presence API guard to the features that need it
 * Fix: strip PR links from the generated readme.txt changelog
-
-= 0.1.9 =
-* Fix: key the filter-support cache on the Gutenberg build, not its version
