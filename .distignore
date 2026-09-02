@@ -3,6 +3,7 @@
 .cache
 .claude
 .env
+.env.example
 .gitignore
 .wp-env.json
 .phpunit.result.cache
