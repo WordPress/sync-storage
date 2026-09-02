@@ -11,7 +11,7 @@ jobs:
     name: Playwright Tests
     runs-on: ubuntu-24.04
     # The browser install is separately bounded at 10 minutes worst case, so
-    # this only needs headroom for the Gutenberg build and the test run.
+    # this only needs headroom for the wp-env boot and the test run.
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -82,23 +82,9 @@ jobs:
           timeout 5m npx playwright install "${args[@]}" chromium || \
           timeout 5m npx playwright install "${args[@]}" chromium
 
-      # Restores the most recent cached checkout as a starting point, then
-      # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
-      # commit before building, so npm install/webpack build run
-      # incrementally instead of from scratch every run. Always saves a
-      # fresh cache under this run's own key so the restore point keeps
-      # rolling forward; it never pins to a stale commit.
-      - name: Cache Gutenberg trunk checkout
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: gutenberg
-          key: gutenberg-trunk-${{ github.run_id }}
-          restore-keys: |
-            gutenberg-trunk-
-
-      - name: Build Gutenberg trunk
-        run: bash build-gutenberg.sh
-
+      # Gutenberg comes from the release zip pinned in .wp-env.json, so there
+      # is no clone, no npm install and no webpack build to cache here. The
+      # nightly is what still builds trunk.
       - name: Start wp-env
         run: npx wp-env start
 

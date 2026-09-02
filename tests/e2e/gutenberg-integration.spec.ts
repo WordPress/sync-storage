@@ -64,8 +64,9 @@ test.describe('Gutenberg Integration', () => {
 		const routes = Object.keys(response.routes || {});
 
 		// Route names as registered by the current Gutenberg and Presence API
-		// builds. build-gutenberg.sh rebuilds against Gutenberg trunk on every
-		// run, so a trunk rename can break this list. If it fails, check the
+		// builds. Gutenberg is pinned in .wp-env.json, but Presence API
+		// installs from the wp.org "latest" zip, so a rename upstream can
+		// break this list without a commit here. If it fails, check the
 		// current route names first. Earlier versions of this test looked for
 		// a "wp-collaboration" namespace that no longer exists.
 		expect(routes).toEqual(

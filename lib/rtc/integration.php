@@ -64,10 +64,12 @@ add_filter(
  *
  * GUTENBERG_VERSION on its own can't tell a trunk build from the release it
  * was branched from: trunk carries the last released number in its plugin
- * header until the next release bumps it, so trunk and released 23.8.0 both
- * report 23.8.0. A site that swapped one for the other would keep the cached
- * answer from the build it replaced. The modification time of the file that
- * would apply the filter moves with any such swap.
+ * header until the next release bumps it, so the two report the same version.
+ * A site that swapped one for the other would keep the cached answer from the
+ * build it replaced -- and this repository swaps exactly that way, between the
+ * release .wp-env.json pins and the trunk build the nightly runs. The
+ * modification time of the file that would apply the filter moves with any
+ * such swap.
  *
  * The constant is guarded because WP_Sync_Storage moves to core with the
  * feature, so the interface can be declared with no Gutenberg plugin

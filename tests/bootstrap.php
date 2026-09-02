@@ -25,9 +25,12 @@ require_once "{$_tests_dir}/includes/functions.php";
  * Manually load the plugin being tested and its dependencies.
  */
 function _manually_load_plugin() {
-	// Load Gutenberg trunk (required dependency)
-	if ( file_exists( dirname( __DIR__ ) . '/gutenberg/gutenberg.php' ) ) {
-		require dirname( __DIR__ ) . '/gutenberg/gutenberg.php';
+	// Load Gutenberg (required dependency). Found as a sibling plugin rather
+	// than under this repository, so the release zip .wp-env.json installs and
+	// a local ./gutenberg trunk build both resolve: wp-env mounts either one at
+	// wp-content/plugins/gutenberg.
+	if ( file_exists( dirname( __DIR__, 2 ) . '/gutenberg/gutenberg.php' ) ) {
+		require dirname( __DIR__, 2 ) . '/gutenberg/gutenberg.php';
 	}
 
 	// Load Presence API if present. No stub otherwise: tests that need it

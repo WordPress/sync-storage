@@ -2,16 +2,18 @@ name: Nightly
 
 # Every upstream this plugin depends on moves without a commit in this
 # repository: wp-env resolves `"core": null` to whatever WordPress is current,
-# build-gutenberg.sh fast-forwards to Gutenberg trunk, and Presence API
-# installs from the wp.org "latest" zip. Pull requests only exercise the
-# current stable WordPress, so on a day nobody opens one, an upstream change
-# lands unnoticed and then surfaces as a red build on whichever unrelated pull
-# request happens to come next.
+# and Presence API installs from the wp.org "latest" zip. Pull requests only
+# exercise the current stable WordPress, so on a day nobody opens one, an
+# upstream change lands unnoticed and then surfaces as a red build on
+# whichever unrelated pull request happens to come next.
 #
-# This run closes that gap in both directions: it exercises the matrix daily
-# whether or not anyone pushes, and its trunk leg tests the WordPress that has
-# not shipped yet, so a core regression is a failure here rather than a
-# support thread after autoupdates have already moved.
+# This run closes that gap in three directions: it exercises the matrix daily
+# whether or not anyone pushes, its trunk leg tests the WordPress that has not
+# shipped yet, and it is the only run that builds Gutenberg from trunk. Pull
+# requests pin the Gutenberg release in .wp-env.json for speed and
+# reproducibility, which leaves nothing else watching the unstable filter this
+# plugin hooks. So a core regression, or that filter changing shape, is a
+# failure here rather than a support thread after autoupdates have moved.
 on:
   schedule:
     - cron: '0 5 * * *'
@@ -38,6 +40,10 @@ jobs:
       # phpcs.xml.dist's minimum_wp_version. Running it here is what keeps
       # those two numbers honest; drop the leg and they become folklore.
       wp-versions: '[ "latest", "trunk", "7.0" ]'
+      # Pull requests test the pinned Gutenberg release. This is the only run
+      # that builds trunk, and the only thing watching an unstable filter for
+      # changes that ship without a deprecation.
+      gutenberg: trunk
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
