@@ -15,10 +15,10 @@ name: Playground Preview
 on:
   pull_request:
     # Everything that changes what a reviewer sees in the booted site.
-    # Negations apply in order, so the last three add back files that do
-    # affect the preview but sit under a directory the line above drops:
-    # these two workflows decide what the comment contains, and the demo
-    # seeder and helper are written into the collaborator cells.
+    # Negations apply in order, so the last two add back the workflows
+    # that decide what the comment contains, from under a directory the
+    # line above drops. `demo/` needs no line of its own: the seeder,
+    # helper and blueprints are already matched by `**`.
     paths:
       - '**'
       - '!**.md'
@@ -26,8 +26,6 @@ on:
       - '!tests/**'
       - '.github/workflows/playground-preview.yml'
       - '.github/workflows/playground-preview-publish.yml'
-      - 'tests/e2e/demo-seeder.php'
-      - 'tests/e2e/rtc-demo-helper.php'
   # Builds and validates without publishing: the publish job only accepts
   # `pull_request` runs, since it resolves the PR from the head SHA.
   workflow_dispatch:
