@@ -10,7 +10,7 @@ Storage layer for Gutenberg's real-time collaborative editing.
 > [!IMPORTANT]
 > **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services. Anything a managed host offers on top is a bonus, never a dependency. See [Requirements](#requirements).
 
-The `__unstable_wp_sync_storage` filter this plugin hooks arrived in Gutenberg 23.9.0. On anything older the plugin activates but never takes over, and collaboration silently stays on post meta — wp-admin says so in a notice. The Playground demo installs Gutenberg from a GitHub release asset for that reason, not from wordpress.org.
+The `__unstable_wp_sync_storage` filter this plugin hooks arrived in Gutenberg 23.9.0. On anything older the plugin activates but never takes over, and collaboration silently stays on post meta — wp-admin says so in a notice. wordpress.org still ships 23.8.0, so the Playground demo and the local environment both install Gutenberg from the [v23.9.0 release asset](https://github.com/WordPress/gutenberg/releases/tag/v23.9.0) rather than from the plugin directory.
 
 ## Problem
 
@@ -27,7 +27,9 @@ npm run env:start
 
 Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).
 
-The first run builds Gutenberg from trunk, since the filter this plugin hooks isn't in a tagged release yet. A few minutes; subsequent runs reuse the build.
+Gutenberg comes from the pinned release zip, so there's nothing to build.
+
+To run against Gutenberg trunk instead — reproducing a nightly failure, or checking a change to the unstable filter before it releases — use `npm run env:start:trunk`. That clones and builds trunk (a few minutes the first time) and writes a gitignored `.wp-env.override.json` pointing wp-env at it. Delete that file to go back to the release.
 
 ## Architecture
 
@@ -135,7 +137,7 @@ Gutenberg's own filter, hooked here to replace its default post-meta storage wit
 - PHP 7.4+
 - [Presence API](https://wordpress.org/plugins/presence-api/)
 
-[Gutenberg](https://github.com/WordPress/gutenberg) trunk consumes this storage; it isn't needed to run it. Without it the table, its cleanup and `Sync_Storage_Store` still install and work, and the collaboration integration stays unloaded and says so in wp-admin.
+[Gutenberg](https://github.com/WordPress/gutenberg) 23.9.0+ consumes this storage; it isn't needed to run it. Without it the table, its cleanup and `Sync_Storage_Store` still install and work, and the collaboration integration stays unloaded and says so in wp-admin.
 
 | Not required | Why |
 | --- | --- |

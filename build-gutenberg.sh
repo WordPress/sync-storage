@@ -1,6 +1,18 @@
 #!/bin/bash
 set -eo pipefail
 
+# Swaps wp-env off the pinned Gutenberg release and onto a fresh trunk build.
+#
+# .wp-env.json installs a release zip, which is what every ordinary run wants:
+# fixed, prebuilt, and the same everywhere. This script is for the runs that
+# want the opposite -- the nightly, and anyone reproducing one. The filter this
+# plugin hooks is `__unstable_wp_sync_storage`, so it can change shape in trunk
+# with no deprecation; the nightly is where that surfaces the morning after
+# rather than at the next Gutenberg release.
+#
+# The swap goes through .wp-env.override.json (gitignored). Delete that file to
+# go back to the release.
+
 echo "🔨 Building Gutenberg trunk for wp-env..."
 
 # Must be named "gutenberg", matching the slug in sync-storage.php's
@@ -45,6 +57,32 @@ echo "🔧 Running build..."
 npm run build 2>&1 | tail -10
 
 cd ..
+
+# wp-env replaces arrays wholesale rather than merging them, so the override
+# has to restate the whole plugins list. It is derived from .wp-env.json rather
+# than written out here so the two can't drift: adding a plugin there is enough.
+echo "🔁 Pointing wp-env at the trunk build..."
+node -e '
+const fs = require( "fs" );
+const config = JSON.parse( fs.readFileSync( ".wp-env.json", "utf8" ) );
+const plugins = config.plugins.map( ( plugin ) =>
+	plugin.includes( "/gutenberg/releases/" ) ? "./gutenberg" : plugin
+);
+
+// Loud, because the failure is otherwise silent and convincing: the release
+// stays installed, every log line still says trunk, and the run reports green
+// on a Gutenberg it never tested.
+if ( ! plugins.includes( "./gutenberg" ) ) {
+	throw new Error(
+		"No Gutenberg release URL in .wp-env.json to swap for the trunk build."
+	);
+}
+
+fs.writeFileSync(
+	".wp-env.override.json",
+	JSON.stringify( { plugins }, null, "\t" ) + "\n"
+);
+'
 
 echo "✅ Gutenberg built successfully!"
 echo "   Located at: $GUTENBERG_DIR"

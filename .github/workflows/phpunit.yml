@@ -14,6 +14,16 @@ on:
           git mirror.
         type: string
         default: '[ "latest" ]'
+      gutenberg:
+        description: >-
+          Which Gutenberg to test against. "release" installs the version
+          pinned in .wp-env.json, which is what a pull request wants: fixed,
+          prebuilt, and identical to what the demo boots. "trunk" builds from
+          source instead, for the nightly -- the filter this plugin hooks is
+          unstable, so trunk changing under it is a thing to find out about on
+          a schedule rather than on whichever pull request comes next.
+        type: string
+        default: release
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -71,14 +81,14 @@ jobs:
       # build-gutenberg.sh fetches and fast-forwards it to the latest trunk
       # commit before building. The checkout does not depend on the PHP or
       # WordPress version a leg runs against, so every leg restores from one
-      # shared family -- including the entries the Playwright workflow saves.
-      # The paired save step below the build rolls the restore point forward.
+      # shared family. The paired save step below the build rolls the restore
+      # point forward.
       - name: Restore Gutenberg trunk checkout
-        if: ${{ !inputs.skip }}
+        if: ${{ !inputs.skip && inputs.gutenberg == 'trunk' }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: gutenberg
-          key: gutenberg-trunk-${{ github.run_id }}-phpunit
+          key: gutenberg-trunk-${{ github.run_id }}
           restore-keys: |
             gutenberg-trunk-
       # .wp-env.json sets `"core": null`, which wp-env resolves to the current
@@ -105,20 +115,24 @@ jobs:
             trunk)  echo "WP_ENV_CORE=https://wordpress.org/nightly-builds/wordpress-latest.zip" >> "$GITHUB_ENV" ;;
             *)      echo "WP_ENV_CORE=WordPress/WordPress#${WP_VERSION}" >> "$GITHUB_ENV" ;;
           esac
-      - name: Build Gutenberg trunk and start wp-env
+      # Writes .wp-env.override.json pointing wp-env at the build, so this has
+      # to come before the start below rather than beside it.
+      - name: Build Gutenberg trunk
+        if: ${{ !inputs.skip && inputs.gutenberg == 'trunk' }}
+        run: bash build-gutenberg.sh
+      - name: Start wp-env
         if: ${{ !inputs.skip }}
-        run: bash build-gutenberg.sh && npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
+        run: npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
       # The checkout is identical across legs, so only the coverage leg --
-      # the one leg every matrix has -- saves. The suffix avoids colliding
-      # with the Playwright workflow's save in the same run.
+      # the one leg every matrix has -- saves.
       - name: Save Gutenberg trunk checkout
-        if: ${{ !inputs.skip && matrix.coverage }}
+        if: ${{ !inputs.skip && inputs.gutenberg == 'trunk' && matrix.coverage }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: gutenberg
-          key: gutenberg-trunk-${{ github.run_id }}-phpunit
+          key: gutenberg-trunk-${{ github.run_id }}
       - if: ${{ !inputs.skip }}
         run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/sync-storage' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
       - name: Upload coverage to Codecov

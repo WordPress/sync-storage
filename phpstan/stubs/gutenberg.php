@@ -4,13 +4,14 @@
  *
  * Gutenberg is a runtime dependency declared in the Requires Plugins header,
  * not a Composer one, so nothing in vendor/ describes it. WP_Sync_Storage is
- * copied from Gutenberg trunk's
+ * copied from Gutenberg's
  * lib/experimental/collaboration/interface-wp-sync-storage.php.
  *
  * Keeping the real signatures rather than an empty interface is the point:
  * PHPStan checks Sync_Storage_Provider against them. Drift is not silent
- * either -- the PHPUnit suite runs against real Gutenberg trunk in wp-env,
- * where the provider would fatal on an interface it no longer satisfies.
+ * either -- the PHPUnit suite runs against a real Gutenberg in wp-env, where
+ * the provider would fatal on an interface it no longer satisfies, and the
+ * nightly runs it against trunk so that fatal arrives before the release does.
  *
  * Scanned, never analysed.
  *

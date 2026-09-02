@@ -5,6 +5,7 @@ artifacts/
 .phpunit.result.cache
 coverage.xml
 .wp-env-gutenberg
+.wp-env.override.json
 gutenberg/
 .env
 
