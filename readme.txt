@@ -55,6 +55,10 @@ Yes, Sync Storage requires the Presence API plugin for awareness infrastructure.
 
 Only to use the collaboration feature. Sync Storage installs and runs without it, and picks Gutenberg up whenever it is activated. It is the consumer of this storage, not a dependency of it.
 
+= Collaborators stopped showing up in the editor. Why? =
+
+Check Settings > General. Presence API 0.3.0 added a switch for whether presence is recorded at all, and Sync Storage stores awareness through Presence API. With recording switched off, edits still sync but nobody sees anyone else. Sync Storage says so in a notice in wp-admin.
+
 = Does this work on multisite? =
 
 Yes, with one caveat. Collaboration data is stored per site, so every site needs its own table. Activating Sync Storage on a site creates that site's table, and sites created later get one automatically.

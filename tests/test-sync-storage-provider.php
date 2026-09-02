@@ -210,6 +210,44 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test a site with presence recording switched off stores no awareness.
+	 *
+	 * Presence API 0.3.0 gave sites a switch, and wp_set_presence() refuses
+	 * every write while it is off. Nothing upstream reads what this method
+	 * returns, so an unconditional true here would have been invisible: the
+	 * only thing distinguishing an opted-out site from a broken one is what
+	 * this plugin says about it.
+	 *
+	 * @covers Sync_Storage_Provider::set_awareness_state
+	 */
+	public function test_awareness_is_not_stored_while_recording_is_switched_off() {
+		if ( ! function_exists( 'wp_presence_recording_enabled' ) ) {
+			$this->markTestSkipped( 'Presence API 0.3.0 or later not available' );
+		}
+
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$result = $this->provider->set_awareness_state(
+			$this->room,
+			array(
+				array(
+					'client_id'  => 4033094322,
+					'state'      => array( 'cursor' => 10 ),
+					'wp_user_id' => get_current_user_id(),
+				),
+			)
+		);
+
+		remove_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$this->assertFalse( $result );
+
+		// Read back with the switch on again: the switch gates writes, not
+		// reads, so anything stored despite it would still be returned here.
+		$this->assertSame( array(), $this->provider->get_awareness_state( $this->room ) );
+	}
+
+	/**
 	 * Test presence entries written by anything else stay out of awareness.
 	 *
 	 * Presence API's Heartbeat handler writes into the same room string this

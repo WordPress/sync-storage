@@ -29,6 +29,8 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 Gutenberg comes from the pinned release zip, so there's nothing to build.
 
+Presence API comes from the wordpress.org "latest" zip, and wp-env caches what it downloads: an environment created before a Presence API release keeps running the older one until `npx wp-env start --update`. CI never sees this — its runners start empty.
+
 To run against Gutenberg trunk instead — reproducing a nightly failure, or checking a change to the unstable filter before it releases — use `npm run env:start:trunk`. That clones and builds trunk (a few minutes the first time) and writes a gitignored `.wp-env.override.json` pointing wp-env at it. Delete that file to go back to the release.
 
 ## Architecture
@@ -56,6 +58,8 @@ The split is internal. These aren't separate plugins, and shouldn't be until som
 1. Gutenberg calls `set_awareness_state( $room, $awareness )`
 2. Each entry is forwarded to Presence API's `wp_set_presence()`
 3. Reads go through `get_awareness_state( $room )`, which calls `wp_get_presence()` and reshapes the result into Gutenberg's expected format
+
+A site can switch presence recording off under Settings > General (Presence API 0.3.0), and nothing is then stored. Edits still sync; collaborators stop seeing each other, and wp-admin says so in a notice.
 
 **CRDT updates**
 1. Gutenberg calls `add_update( $room, $update )`

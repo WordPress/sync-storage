@@ -138,7 +138,7 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 	 *
 	 * @param string            $room      Room identifier.
 	 * @param array<int, mixed> $awareness Awareness state array (Gutenberg sync server format).
-	 * @return bool True on success.
+	 * @return bool True when every entry was stored.
 	 */
 	public function set_awareness_state( string $room, array $awareness ): bool {
 		Sync_Storage_Logger::storage( 'set_awareness_state', $room, $awareness );
@@ -150,6 +150,19 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 
 		if ( ! function_exists( 'wp_set_presence' ) ) {
 			Sync_Storage_Logger::event( 'Presence API not available' );
+			return false;
+		}
+
+		// A site can switch presence recording off (Presence API 0.3.0), and
+		// wp_set_presence() answers false for every write while it is. Asked
+		// once here rather than inferred from a row of failures, so the log
+		// separates a site that opted out from storage that broke -- and so a
+		// switched-off site does no work per poll beyond this option read.
+		//
+		// The function is guarded because Requires Plugins carries no version:
+		// a site on 0.2.x has the switch's default behaviour and no switch.
+		if ( function_exists( 'wp_presence_recording_enabled' ) && ! wp_presence_recording_enabled() ) {
+			Sync_Storage_Logger::event( 'Presence recording switched off', array( 'room' => $room ) );
 			return false;
 		}
 
@@ -177,6 +190,12 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 		}
 
 		// Transform to presence-api format and store each client.
+		//
+		// Reporting what the writes actually did, rather than that the method
+		// ran. Gutenberg discards this return -- awareness failing is not worth
+		// failing a poll over -- so the value is the log line and the tests.
+		$stored = true;
+
 		foreach ( $awareness as $entry ) {
 			if ( ! isset( $entry['client_id'], $entry['wp_user_id'] ) ) {
 				continue;
@@ -186,12 +205,14 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 				continue;
 			}
 
-			wp_set_presence(
+			$written = wp_set_presence(
 				$room,
 				self::CLIENT_PREFIX . $entry['client_id'],
 				$entry['state'] ?? array(),
 				$entry['wp_user_id']
 			);
+
+			$stored = $stored && $written;
 
 			Sync_Storage_Logger::presence(
 				'wp_set_presence',
@@ -199,11 +220,12 @@ class Sync_Storage_Provider implements WP_Sync_Storage {
 				array(
 					'client_id' => $entry['client_id'],
 					'user_id'   => $entry['wp_user_id'],
+					'stored'    => $written,
 				)
 			);
 		}
 
-		return true;
+		return $stored;
 	}
 
 	/**
