@@ -15,12 +15,13 @@ set -eo pipefail
 
 echo "🔨 Building Gutenberg trunk for wp-env..."
 
-# Must be named "gutenberg", matching the slug in sync-storage.php's
-# "Requires Plugins" header -- wp-env mounts local plugin paths using the
-# source directory's basename, and WordPress's plugin dependency checker
-# matches "Requires Plugins" slugs against installed plugins' folder names.
-# A mismatched folder name (e.g. "gutenberg-trunk") makes WordPress report
-# the dependency as missing even while the plugin is active.
+# Must be named "gutenberg". wp-env mounts a local plugin path under the
+# source directory's basename, and tests/bootstrap.php loads the dependency
+# from wp-content/plugins/gutenberg/gutenberg.php -- the same path the
+# release zip unpacks to, which is what lets one bootstrap serve both
+# sources. A mismatched folder name (e.g. "gutenberg-trunk") leaves the
+# suite running with no editor loaded at all, and silently: the tests that
+# need one are the only ones that fail.
 GUTENBERG_DIR="gutenberg"
 
 # Clone if not already done. If a cached checkout already exists (CI
