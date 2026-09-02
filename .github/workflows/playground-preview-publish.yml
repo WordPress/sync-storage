@@ -155,16 +155,16 @@ jobs:
           SEEDER_URL="${RAW}/demo-seeder.php"
           HELPER_URL="${RAW}/rtc-demo-helper.php"
 
-          # Gutenberg comes from a GitHub release asset, not wordpress.org.
-          # The wordpress.org build hardcodes WP_Sync_Post_Meta_Storage; the
-          # `__unstable_wp_sync_storage` filter this plugin hooks arrived
-          # after it, so on that build sync-storage activates and never takes
-          # over, and every cell of the grid would be post meta.
+          # Gutenberg comes from a GitHub release asset rather than
+          # wordpress.org. Both carry the `__unstable_wp_sync_storage` filter
+          # this plugin hooks as of 23.9.0, so either would boot a working
+          # grid; GitHub is what publishes release candidates, and the
+          # collaboration work lands in those first.
           #
           # Resolved at publish time rather than pinned, so the comment does
           # not slowly start booting an older Gutenberg than the one the PR
-          # was written against. Pre-releases are eligible: RTC is behind an
-          # experiment flag and lands in RCs first.
+          # was written against. Pre-releases are eligible for the same
+          # reason: RTC is behind an experiment flag and ships in RCs first.
           GUTENBERG_URL=$(
             gh api repos/WordPress/gutenberg/releases \
               --jq 'map(select(.draft | not)) | .[0].assets[] | select(.name == "gutenberg.zip") | .browser_download_url' \
