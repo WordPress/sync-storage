@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.15](https://github.com/WordPress/sync-storage/compare/v0.1.14...v0.1.15) (2026-09-04)
+
+
+### Bug Fixes
+
+* say when presence recording is switched off ([#108](https://github.com/WordPress/sync-storage/issues/108)) ([3e78f57](https://github.com/WordPress/sync-storage/commit/3e78f57cd7d7828b76982522d84abfb73332900f))
+
 ## [0.1.14](https://github.com/WordPress/sync-storage/compare/v0.1.13...v0.1.14) (2026-09-02)
 
 
