@@ -160,3 +160,32 @@ add_action(
 		echo '</p></div>';
 	}
 );
+
+/**
+ * Warns when Presence API is installed but recording nothing.
+ *
+ * Switching recording off (Presence API 0.3.0, Settings > General) is a
+ * supported choice, and every presence surface it owns empties visibly. This
+ * one does not: awareness still round trips through the sync server, which
+ * echoes each client its own state back, so the editor looks like it is working
+ * and every collaborator is simply invisible to every other one.
+ *
+ * Loaded with the rest of the integration, so it is only reachable on a site
+ * that has an editor to be invisible in. A site with no Presence API at all
+ * gets sync_storage_presence_missing_notice() instead, and never both.
+ */
+add_action(
+	'admin_notices',
+	function () {
+		if ( ! function_exists( 'wp_presence_recording_enabled' ) || wp_presence_recording_enabled() ) {
+			return;
+		}
+
+		echo '<div class="notice notice-warning"><p>';
+		echo esc_html__(
+			"Sync Storage: presence recording is switched off, so collaborators can't see each other in the editor. Collaborative edits still sync. Turn recording back on under Settings > General, or on the network settings screen if this is a multisite network.",
+			'sync-storage'
+		);
+		echo '</p></div>';
+	}
+);
