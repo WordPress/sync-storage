@@ -20,7 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 define( 'WP_SYNC_STORAGE_VERSION', '0.1.15' );
-define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
+
+/*
+ * The shape of wp_collaboration, versioned apart from the plugin because most
+ * releases do not touch the table. Raise it only alongside a migration step in
+ * lib/store/schema.php.
+ */
+define( 'WP_SYNC_STORAGE_DB_VERSION', 2 );
 define( 'WP_SYNC_STORAGE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_SYNC_STORAGE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 

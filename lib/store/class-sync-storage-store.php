@@ -20,6 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * post-scoped state is a recurring problem in WordPress and post meta is the
  * usual, cache-invalidating answer to it.
  *
+ * The column holding that autoincrement is `collaboration_id`, following
+ * core's naming for the table. get_after() aliases it to `id` so callers keep
+ * this class's vocabulary rather than the table's; the alias in the SELECT is
+ * the only place the two meet.
+ *
  * Access control is not this layer's job. Callers decide who may touch a
  * room; see Sync_Storage_Provider::validate_access().
  *
@@ -88,9 +93,9 @@ class Sync_Storage_Store {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, data FROM {$wpdb->collaboration}
-				 WHERE room = %s AND type IS NULL AND id > %d
-				 ORDER BY id ASC",
+				"SELECT collaboration_id AS id, data FROM {$wpdb->collaboration}
+				 WHERE room = %s AND type IS NULL AND collaboration_id > %d
+				 ORDER BY collaboration_id ASC",
 				$room,
 				$cursor
 			),
@@ -147,7 +152,7 @@ class Sync_Storage_Store {
 		$result = $wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->collaboration}
-				 WHERE room = %s AND type IS NULL AND id < %d",
+				 WHERE room = %s AND type IS NULL AND collaboration_id < %d",
 				$room,
 				$cursor
 			)

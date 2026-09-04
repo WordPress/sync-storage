@@ -151,7 +151,7 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$first_id = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT id FROM {$wpdb->collaboration} WHERE room = %s ORDER BY id ASC LIMIT 1",
+				"SELECT collaboration_id FROM {$wpdb->collaboration} WHERE room = %s ORDER BY collaboration_id ASC LIMIT 1",
 				$this->room
 			)
 		);
@@ -560,7 +560,7 @@ class WP_Test_Sync_Storage_Provider extends WP_UnitTestCase {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$timestamp = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT timestamp FROM {$wpdb->collaboration} WHERE room = %s ORDER BY id DESC LIMIT 1",
+				"SELECT timestamp FROM {$wpdb->collaboration} WHERE room = %s ORDER BY collaboration_id DESC LIMIT 1",
 				$this->room
 			)
 		);

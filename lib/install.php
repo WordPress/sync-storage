@@ -56,6 +56,21 @@ function sync_storage_install_network() {
 	sync_storage_for_each_site( 'sync_storage_install_site' );
 }
 
+/*
+ * Updating a plugin in place fires no activation hook, so a schema change
+ * reachable only through sync_storage_install_site() would miss every site
+ * that already has rows. sync_storage_upgrade_table() compares the stored
+ * sync_storage_db_version against the constant instead.
+ *
+ * plugins_loaded rather than admin_init: the first request after an update is
+ * as likely to be an editor polling /wp-sync/v1/updates as an admin page load,
+ * and the store cannot serve that poll against the previous schema.
+ *
+ * Current site only. On a network each site migrates on its own first request,
+ * rather than one visitor paying for an ALTER per site.
+ */
+add_action( 'plugins_loaded', 'sync_storage_upgrade_table' );
+
 /**
  * Multisite: Activate on newly created sites.
  */

@@ -14,6 +14,6 @@
  */
 
 define( 'WP_SYNC_STORAGE_VERSION', '0.0.0' );
-define( 'WP_SYNC_STORAGE_DB_VERSION', 1 );
+define( 'WP_SYNC_STORAGE_DB_VERSION', 2 );
 define( 'WP_SYNC_STORAGE_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 define( 'WP_SYNC_STORAGE_PLUGIN_URL', 'https://example.org/wp-content/plugins/sync-storage/' );
