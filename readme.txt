@@ -4,7 +4,7 @@ Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.14
+Stable tag: 0.1.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -73,6 +73,9 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.15 =
+* Fix: say when presence recording is switched off
+
 = 0.1.14 =
 * Feature: install the Gutenberg 23.9.0 release instead of building trunk
 
@@ -90,10 +93,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.1.11 =
 * Fix: drop the post meta migration that never migrated anything
-
-= 0.1.10 =
-* Fix: clear the cleanup cron when the plugin is deactivated
-* Fix: guard GUTENBERG_VERSION in the build id
-* Fix: register the deactivation hook above the dependency guards
-* Fix: scope the Presence API guard to the features that need it
-* Fix: strip PR links from the generated readme.txt changelog
