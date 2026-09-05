@@ -49,10 +49,55 @@ export function wpCli(args: string[]): string {
 	});
 }
 
-/** One `/wp-sync/v1/updates` request, as recorded by the sync-query-counter mu-plugin. */
-export interface SyncQuerySample {
+/**
+ * What the database did for one `/wp-sync/v1/updates` request, as recorded by
+ * the sync-cost-counter mu-plugin.
+ *
+ * `queries` is how many statements ran. The `handler_*` counters are the rows
+ * those statements actually touched, per connection, and the `innodb_*` ones
+ * are the physical IO they caused, server-wide. See the mu-plugin for what
+ * each counter means and why its scope is what it is.
+ */
+export interface SyncCostSample {
 	queries: number;
 	rooms: number;
+	sql?: string[];
+	handler_read_key: number;
+	handler_read_next: number;
+	handler_read_rnd_next: number;
+	handler_write: number;
+	handler_update: number;
+	handler_delete: number;
+	innodb_data_reads: number;
+	innodb_data_writes: number;
+	innodb_data_fsyncs: number;
+	innodb_os_log_fsyncs: number;
+	innodb_buffer_pool_reads: number;
+}
+
+/** Rows the storage engine touched, whatever the statement count. */
+export function rowsTouched(sample: SyncCostSample): number {
+	return (
+		sample.handler_read_key +
+		sample.handler_read_next +
+		sample.handler_read_rnd_next +
+		sample.handler_write +
+		sample.handler_update +
+		sample.handler_delete
+	);
+}
+
+/**
+ * Rows the storage engine wrote or updated, ignoring reads.
+ *
+ * Presence is written with a single `INSERT ... ON DUPLICATE KEY UPDATE`, so
+ * this is 1 whatever the room holds: an insert counts as a write, an update
+ * as an update, never both and never more than one row. Reads scale with room
+ * occupancy because returning N clients' awareness costs N row reads; this is
+ * the counter that stays flat, which `rowsTouched()` does not.
+ */
+export function writesTouched(sample: SyncCostSample): number {
+	return sample.handler_write + sample.handler_update + sample.handler_delete;
 }
 
 /**
@@ -61,25 +106,25 @@ export interface SyncQuerySample {
  * Deleting an option that does not exist is a non-zero exit, which is the
  * normal state on the first call of a run.
  */
-export function resetQueryLog(): void {
+export function resetCostLog(): void {
 	try {
-		wpCli(['option', 'delete', 'sync_query_counter_log']);
+		wpCli(['option', 'delete', 'sync_cost_counter_log']);
 	} catch {
 		// Nothing recorded yet.
 	}
 }
 
 /**
- * Read the queries recorded for each sync request since the last reset.
+ * Read what each sync request cost since the last reset.
  */
-export function readQueryLog(): SyncQuerySample[] {
+export function readCostLog(): SyncCostSample[] {
 	let raw: string;
 
 	try {
 		raw = wpCli([
 			'option',
 			'get',
-			'sync_query_counter_log',
+			'sync_cost_counter_log',
 			'--format=json',
 		]).trim();
 	} catch {

@@ -42,4 +42,50 @@ class WP_Test_Sync_Storage_Activation extends WP_UnitTestCase {
 
 		$this->assertFalse( $queried, 'Activation queried wp_sync_storage posts.' );
 	}
+
+	/**
+	 * Deactivating this plugin does not drop its table, so activating a
+	 * newer version against a site that ran an older one is an upgrade,
+	 * not a fresh install. sync_storage_install_site() used to call
+	 * sync_storage_create_table() directly, a fresh-install path where
+	 * dbDelta cannot rename an existing `id` column, and the site would be
+	 * recorded as migrated over a table that was never actually touched.
+	 *
+	 * @covers ::sync_storage_install_site
+	 */
+	public function test_activation_upgrades_an_existing_older_table_instead_of_skipping_it() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+		$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->collaboration}" );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+		$wpdb->query(
+			"CREATE TABLE {$wpdb->collaboration} (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				room varchar(191) NOT NULL,
+				type varchar(20) DEFAULT NULL,
+				data longtext NOT NULL,
+				timestamp bigint(20) unsigned NOT NULL,
+				PRIMARY KEY (id),
+				KEY room_id (room(50), id),
+				KEY room_timestamp (room(50), timestamp)
+			) " . $wpdb->get_charset_collate()
+		);
+		update_option( 'sync_storage_db_version', 1 );
+
+		sync_storage_install_site();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$columns = $wpdb->get_col( "SHOW COLUMNS FROM {$wpdb->collaboration}" );
+
+		$this->assertContains( 'collaboration_id', $columns, 'Activation left the old schema in place.' );
+		$this->assertSame(
+			WP_SYNC_STORAGE_DB_VERSION,
+			(int) get_option( 'sync_storage_db_version' ),
+			'The recorded version does not match what the table actually is.'
+		);
+
+		// Restore the table the rest of the suite expects.
+		sync_storage_create_table();
+	}
 }

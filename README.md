@@ -106,17 +106,25 @@ $storage->remove_updates_before_cursor( $room, $cursor );
 
 ### `wp_collaboration`
 
-| Column    | Type             | Purpose                                                    |
-| --------- | ---------------- | ----------------------------------------------------------- |
-| id        | BIGINT UNSIGNED  | Auto-increment cursor for polling                            |
-| room      | VARCHAR(191)     | Room identifier, e.g. `postType/post:42`                    |
-| type      | VARCHAR(20)      | Reserved for future update classification; always NULL today |
-| data      | LONGTEXT         | JSON-encoded opaque payload                                  |
-| timestamp | BIGINT UNSIGNED  | Milliseconds since epoch, matching Yjs. Used by cleanup      |
+| Column           | Type            | Purpose                                                      |
+| ---------------- | --------------- | ------------------------------------------------------------ |
+| collaboration_id | BIGINT UNSIGNED | Auto-increment cursor for polling                              |
+| room             | VARCHAR(191)    | Room identifier, e.g. `postType/post:42`                      |
+| type             | VARCHAR(20)     | Reserved for future update classification; always NULL today   |
+| data             | LONGTEXT        | JSON-encoded opaque payload                                    |
+| timestamp        | BIGINT UNSIGNED | Milliseconds since epoch, matching Yjs. Used by cleanup        |
 
-**Indexes:** `PRIMARY KEY (id)`, `KEY room_id (room, id)` for polling, `KEY room_timestamp (room, timestamp)` for cleanup.
+**Indexes:** `PRIMARY KEY (collaboration_id)`, `KEY room_id (room, collaboration_id)` for polling, `KEY room_timestamp (room, timestamp)` for cleanup.
 
 A daily cron removes rows older than 7 days.
+
+The table name, the `$wpdb->collaboration` property and the `collaboration_id`
+key match the collaboration table core proposes in
+[wordpress-develop#11256](https://github.com/WordPress/wordpress-develop/pull/11256).
+
+`WP_SYNC_STORAGE_DB_VERSION` tracks this schema apart from the plugin version.
+Every request compares it against the site's stored `sync_storage_db_version`,
+so migrations reach sites that were updated rather than newly activated.
 
 ## Hooks
 

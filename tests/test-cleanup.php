@@ -42,19 +42,9 @@ class WP_Test_Sync_Storage_Cleanup extends WP_UnitTestCase {
 	public function test_cleanup_removes_old_updates() {
 		global $wpdb;
 
-		// Create test table if it doesn't exist
-		$wpdb->query(
-			"CREATE TABLE IF NOT EXISTS {$wpdb->collaboration} (
-				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-				room varchar(191) NOT NULL,
-				type varchar(20) DEFAULT NULL,
-				data longtext NOT NULL,
-				timestamp bigint(20) unsigned NOT NULL,
-				PRIMARY KEY (id),
-				KEY room_id (room(50), id),
-				KEY room_timestamp (room(50), timestamp)
-			)"
-		);
+		// The plugin's own definition, not a copy: a test carrying its own
+		// CREATE TABLE keeps passing after the schema moves.
+		sync_storage_create_table();
 
 		// Insert old update (8 days ago)
 		$old_timestamp = ( time() - 8 * DAY_IN_SECONDS ) * 1000;

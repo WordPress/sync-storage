@@ -4,12 +4,18 @@
  * The per-poll query count is the number the RTC performance discussion turns
  * on, and a number read off the call graph is worth less than one taken from
  * the endpoint running. These tests drive `/wp-sync/v1/updates` for real and
- * report what the database actually saw, via the sync-query-counter mu-plugin.
+ * report what the database actually saw, via the sync-cost-counter mu-plugin.
  *
  * The invariant under test is that the count is flat in the number of clients
  * sharing a room. An adapter that writes every client's row on every poll makes
  * it linear instead, which at the one-second collaborator interval is the
  * difference between thousands and tens of thousands of writes an hour.
+ *
+ * Query count is necessary but not sufficient: a query that reads one row and
+ * one that scans a growing room are the same number here and diverge without
+ * bound on a real disk. Reads legitimately scale with room size, since
+ * returning N clients' awareness costs N row reads; `writesTouched()` is
+ * checked instead, since the write side is what #91 made flat.
  */
 import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
 import {
@@ -17,8 +23,10 @@ import {
 	closeCollaborativeSessions,
 	pollSync,
 	postRoom,
-	resetQueryLog,
-	readQueryLog,
+	resetCostLog,
+	readCostLog,
+	rowsTouched,
+	writesTouched,
 } from './utils/collaborative';
 
 const test = base.extend({});
@@ -46,10 +54,17 @@ test.describe('Polling cost', () => {
 			});
 			const room = postRoom(post.id);
 
+			// Warm up session 0's own row before measuring, so both polls below hit
+			// the UPDATE branch of INSERT ... ON DUPLICATE KEY UPDATE. Otherwise
+			// "solo" is a first-ever INSERT and "crowded" an UPDATE of it, and
+			// MySQL's handler counters differ between the two regardless of room
+			// size, which would confound the comparison below.
+			await pollSync(sessions[0], room, { awareness: { cursor: 0 } });
+
 			// One client in the room.
-			resetQueryLog();
+			resetCostLog();
 			await pollSync(sessions[0], room, { awareness: { cursor: 1 } });
-			const solo = readQueryLog();
+			const solo = readCostLog();
 
 			expect(solo).toHaveLength(1);
 
@@ -59,18 +74,20 @@ test.describe('Polling cost', () => {
 			await pollSync(sessions[2], room, { awareness: { cursor: 3 } });
 			await waitForNewSecond();
 
-			resetQueryLog();
+			resetCostLog();
 			await pollSync(sessions[0], room, { awareness: { cursor: 4 } });
-			const crowded = readQueryLog();
+			const crowded = readCostLog();
 
 			expect(crowded).toHaveLength(1);
 
 			// eslint-disable-next-line no-console
 			console.log(
-				`queries per poll: ${solo[0].queries} at 1 client, ${crowded[0].queries} at 3`
+				`queries per poll: ${solo[0].queries} at 1 client, ${crowded[0].queries} at 3; ` +
+					`rows touched: ${rowsTouched(solo[0])} at 1 client, ${rowsTouched(crowded[0])} at 3`
 			);
 
 			expect(crowded[0].queries).toBe(solo[0].queries);
+			expect(writesTouched(crowded[0])).toBe(writesTouched(solo[0]));
 		} finally {
 			await closeCollaborativeSessions(sessions);
 		}
@@ -90,21 +107,29 @@ test.describe('Polling cost', () => {
 			const room = postRoom(post.id);
 
 			await pollSync(sessions[0], room, { awareness: { cursor: 1 } });
+
+			// Warm up session 1's own row before either measured poll, so both
+			// hit the UPDATE branch of INSERT ... ON DUPLICATE KEY UPDATE. Left
+			// as an INSERT, "relayed" and "alone" would differ in handler
+			// counters purely from that, independent of whether the stale
+			// entry gets rewritten, which is the thing this test checks.
+			await pollSync(sessions[1], room, { awareness: { cursor: 0 } });
 			await waitForNewSecond();
 
 			// Session 1 is now the freshest; session 0's entry is older and is
-			// relayed back to storage untouched rather than rewritten.
-			resetQueryLog();
+			// relayed back to storage untouched, not rewritten.
+			resetCostLog();
 			await pollSync(sessions[1], room, { awareness: { cursor: 2 } });
-			const relayed = readQueryLog();
+			const relayed = readCostLog();
 
 			expect(relayed).toHaveLength(1);
 
-			resetQueryLog();
+			resetCostLog();
 			await pollSync(sessions[1], room, { awareness: { cursor: 3 } });
-			const alone = readQueryLog();
+			const alone = readCostLog();
 
 			expect(relayed[0].queries).toBe(alone[0].queries);
+			expect(writesTouched(relayed[0])).toBe(writesTouched(alone[0]));
 		} finally {
 			await closeCollaborativeSessions(sessions);
 		}
