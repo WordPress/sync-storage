@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.16](https://github.com/WordPress/sync-storage/compare/v0.1.15...v0.1.16) (2026-09-05)
+
+
+### Features
+
+* rename the collaboration primary key to collaboration_id ([#110](https://github.com/WordPress/sync-storage/issues/110)) ([1f76ff6](https://github.com/WordPress/sync-storage/commit/1f76ff6b889f8da44e8222d8c36a9273d1adea06))
+
+
+### Dependencies
+
+* patch wp-env's PHP 7.4 image for Debian bullseye's EOL archive ([#126](https://github.com/WordPress/sync-storage/issues/126)) ([f7553b8](https://github.com/WordPress/sync-storage/commit/f7553b86ec525f0178d9708da706dea53bdcce38))
+
 ## [0.1.15](https://github.com/WordPress/sync-storage/compare/v0.1.14...v0.1.15) (2026-09-04)
 
 

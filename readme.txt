@@ -4,7 +4,7 @@ Tags: collaboration, real-time, gutenberg, presence, yjs
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.15
+Stable tag: 0.1.16
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -73,6 +73,10 @@ Updates are cleaned up via compaction (coordinated by Gutenberg) and a daily cro
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/sync-storage/blob/main/CHANGELOG.md
 
+= 0.1.16 =
+* Feature: rename the collaboration primary key to collaboration_id
+* Dependencies: patch wp-env's PHP 7.4 image for Debian bullseye's EOL archive
+
 = 0.1.15 =
 * Fix: say when presence recording is switched off
 
@@ -90,6 +94,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Fix: defer room access to the sync server's own grammar
 * Fix: stamp awareness with a real timestamp so the editor keeps it
 * Fix: write only the polling client's awareness entry
-
-= 0.1.11 =
-* Fix: drop the post meta migration that never migrated anything
