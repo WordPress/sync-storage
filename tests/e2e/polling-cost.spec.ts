@@ -107,10 +107,17 @@ test.describe('Polling cost', () => {
 			const room = postRoom(post.id);
 
 			await pollSync(sessions[0], room, { awareness: { cursor: 1 } });
+
+			// Warm up session 1's own row before either measured poll, so both
+			// hit the UPDATE branch of INSERT ... ON DUPLICATE KEY UPDATE. Left
+			// as an INSERT, "relayed" and "alone" would differ in handler
+			// counters purely from that, independent of whether the stale
+			// entry gets rewritten, which is the thing this test checks.
+			await pollSync(sessions[1], room, { awareness: { cursor: 0 } });
 			await waitForNewSecond();
 
 			// Session 1 is now the freshest; session 0's entry is older and is
-			// relayed back to storage untouched rather than rewritten.
+			// relayed back to storage untouched, not rewritten.
 			resetCostLog();
 			await pollSync(sessions[1], room, { awareness: { cursor: 2 } });
 			const relayed = readCostLog();
@@ -122,6 +129,7 @@ test.describe('Polling cost', () => {
 			const alone = readCostLog();
 
 			expect(relayed[0].queries).toBe(alone[0].queries);
+			expect(writesTouched(relayed[0])).toBe(writesTouched(alone[0]));
 		} finally {
 			await closeCollaborativeSessions(sessions);
 		}

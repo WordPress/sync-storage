@@ -36,10 +36,10 @@ function wp_sync_storage_register_table() {
  * Sync_Storage_Store::current_time_ms().
  *
  * The primary key is `collaboration_id`, matching the column-prefix
- * convention core applies to its own tables and the definition in
- * WordPress/wordpress-develop#11256. With the table name and
- * $wpdb->collaboration, that leaves a site's rows readable by a core
- * implementation.
+ * convention core applies to its own tables and the naming in
+ * WordPress/wordpress-develop#11256. That PR's schema also has `client_id`,
+ * `user_id` and a non-null `type`, which this table does not, so the match is
+ * naming and key convention only -- it does not make rows interchangeable.
  */
 function sync_storage_create_table() {
 	global $wpdb;
@@ -60,6 +60,22 @@ function sync_storage_create_table() {
 			KEY room_timestamp (room(50), timestamp)
 		) $charset_collate;"
 	);
+
+	// dbDelta has no useful return value for "did this actually work" -- it
+	// reports statements run, not statements that succeeded. Checking for the
+	// column dbDelta was responsible for creating is what stands in for that,
+	// and is what keeps a failed run from being recorded as a success below.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	if ( ! $wpdb->get_var( "SHOW COLUMNS FROM {$wpdb->collaboration} LIKE 'collaboration_id'" ) ) {
+		Sync_Storage_Logger::event(
+			'Table creation failed',
+			array(
+				'table' => $wpdb->collaboration,
+				'error' => $wpdb->last_error,
+			)
+		);
+		return;
+	}
 
 	Sync_Storage_Logger::event(
 		'Table created',
@@ -82,16 +98,30 @@ function sync_storage_create_table() {
  * so a site updating from 1 to 4 runs 2, 3 and 4 in order. Never edit a step
  * sites have already run. Nothing serialises callers, so a step must also
  * tolerate finding its work done by a concurrent request.
+ *
+ * A step that reports failure stops the chain before the version is recorded.
+ * The next request finds the same unmet version and tries again, instead of
+ * being told there is nothing left to do.
  */
 function sync_storage_upgrade_table() {
 	$installed = (int) get_option( 'sync_storage_db_version', 0 );
 
-	if ( WP_SYNC_STORAGE_DB_VERSION === $installed ) {
+	// >=, not ===: a site downgraded below its recorded version has nothing
+	// here to run either, and re-running an old step against a schema built by
+	// a newer one is not something any step is written to expect.
+	if ( $installed >= WP_SYNC_STORAGE_DB_VERSION ) {
 		return;
 	}
 
-	if ( $installed < 2 ) {
-		sync_storage_upgrade_to_2();
+	if ( $installed < 2 && ! sync_storage_upgrade_to_2() ) {
+		Sync_Storage_Logger::event(
+			'Table upgrade aborted',
+			array(
+				'from' => $installed,
+				'to'   => WP_SYNC_STORAGE_DB_VERSION,
+			)
+		);
+		return;
 	}
 
 	// dbDelta reconciles added columns, widened types and new indexes without
@@ -119,23 +149,38 @@ function sync_storage_upgrade_table() {
  * AUTO_INCREMENT counter follow it. Copying into a new column would reset the
  * counter to 1, and clients polling with a higher cursor would see nothing
  * until it caught up.
+ *
+ * @return bool True if the site is left with `collaboration_id` in place (by
+ *              this call or a concurrent one) or has no table yet for
+ *              sync_storage_create_table() to create fresh. False only when
+ *              the table exists in a shape this step does not recognise.
  */
 function sync_storage_upgrade_to_2() {
 	global $wpdb;
 
 	// The version option defaults to 0, so a site with no table runs every step
 	// before sync_storage_create_table() reaches it. Asked rather than left to
-	// fail, to keep an ordinary state out of the error log.
+	// fail, to keep an ordinary state out of the error log. esc_like() matters
+	// here: an unescaped prefix reads its own underscores as SQL wildcards.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->collaboration ) ) ) {
-		return;
+	if ( ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $wpdb->collaboration ) ) ) ) {
+		return true;
 	}
 
-	// Two requests racing here produce one ALTER and one no-op, rather than an
-	// unknown column error on the second.
+	// Checked before touching anything: this call may be racing another
+	// request's copy of the same migration, and finding the rename already
+	// done is success, not a step left to run.
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	if ( $wpdb->get_var( "SHOW COLUMNS FROM {$wpdb->collaboration} LIKE 'collaboration_id'" ) ) {
+		return true;
+	}
+
 	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	if ( ! $wpdb->get_var( "SHOW COLUMNS FROM {$wpdb->collaboration} LIKE 'id'" ) ) {
-		return;
+		// Neither column exists: a table shape this step was not written for.
+		// Recording success here would tell sync_storage_create_table() to
+		// stamp the site as migrated over an unrecognised table.
+		return false;
 	}
 
 	// SchemaChange: the plugin owns this table, and dbDelta, the sniff's usual
@@ -147,12 +192,30 @@ function sync_storage_upgrade_to_2() {
 	);
 	// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 
-	Sync_Storage_Logger::event(
-		'Primary key renamed',
-		array(
-			'table' => $wpdb->collaboration,
-			'from'  => 'id',
-			'to'    => 'collaboration_id',
-		)
-	);
+	// Re-checked instead of trusting the query() result: a concurrent request
+	// renaming the column out from under this ALTER makes MySQL error it, but
+	// the column ends up renamed either way, which is the outcome that matters.
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$renamed = (bool) $wpdb->get_var( "SHOW COLUMNS FROM {$wpdb->collaboration} LIKE 'collaboration_id'" );
+
+	if ( $renamed ) {
+		Sync_Storage_Logger::event(
+			'Primary key renamed',
+			array(
+				'table' => $wpdb->collaboration,
+				'from'  => 'id',
+				'to'    => 'collaboration_id',
+			)
+		);
+	} else {
+		Sync_Storage_Logger::event(
+			'Primary key rename failed',
+			array(
+				'table' => $wpdb->collaboration,
+				'error' => $wpdb->last_error,
+			)
+		);
+	}
+
+	return $renamed;
 }

@@ -119,6 +119,11 @@ class WP_Test_Sync_Storage_Upgrade extends WP_UnitTestCase {
 	 * column resets it to 1, and a client polling with a higher cursor sees no
 	 * new updates until the counter catches up.
 	 *
+	 * The table is left empty before migrating, on purpose: with any row still
+	 * present, MAX(id) + 1 and a genuinely preserved counter allocate the same
+	 * next value, so the assertion would pass even against a migration that
+	 * silently reset it.
+	 *
 	 * @covers ::sync_storage_upgrade_to_2
 	 */
 	public function test_upgrade_preserves_the_autoincrement_counter() {
@@ -126,23 +131,29 @@ class WP_Test_Sync_Storage_Upgrade extends WP_UnitTestCase {
 
 		$this->install_v1();
 
-		$wpdb->insert(
-			$wpdb->collaboration,
-			array(
-				'room'      => 'widget/sidebar:main',
-				'data'      => wp_json_encode( 'first' ),
-				'timestamp' => Sync_Storage_Store::current_time_ms(),
-			),
-			array( '%s', '%s', '%d' )
-		);
+		for ( $i = 0; $i < 5; $i++ ) {
+			$wpdb->insert(
+				$wpdb->collaboration,
+				array(
+					'room'      => 'widget/sidebar:throwaway',
+					'data'      => wp_json_encode( 'discarded' ),
+					'timestamp' => Sync_Storage_Store::current_time_ms(),
+				),
+				array( '%s', '%s', '%d' )
+			);
+		}
 
-		$last = (int) $wpdb->insert_id;
+		$high_water_mark = (int) $wpdb->insert_id;
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query( "DELETE FROM {$wpdb->collaboration} WHERE room = 'widget/sidebar:throwaway'" );
 
 		sync_storage_upgrade_table();
 
 		$this->assertGreaterThan(
-			$last,
-			Sync_Storage_Store::append( 'widget/sidebar:main', 'second' )
+			$high_water_mark,
+			Sync_Storage_Store::append( 'widget/sidebar:main', 'first' ),
+			'The table is empty at this point, so a reset counter would restart at 1.'
 		);
 	}
 
@@ -203,6 +214,36 @@ class WP_Test_Sync_Storage_Upgrade extends WP_UnitTestCase {
 		$this->assertSame(
 			array( 'collaboration_id', 'room', 'type', 'data', 'timestamp' ),
 			$this->columns()
+		);
+	}
+
+	/**
+	 * A site recorded at a version newer than this code has nothing here to
+	 * run. Falling through to sync_storage_create_table() anyway would
+	 * reconcile the newer schema toward this older CREATE TABLE and record
+	 * the site back at this version, even though the database was never
+	 * touched.
+	 *
+	 * @covers ::sync_storage_upgrade_table
+	 */
+	public function test_upgrade_does_not_run_against_a_newer_recorded_version() {
+		global $wpdb;
+
+		update_option( 'sync_storage_db_version', WP_SYNC_STORAGE_DB_VERSION + 1 );
+
+		$queries = $wpdb->num_queries;
+
+		sync_storage_upgrade_table();
+
+		$this->assertSame(
+			$queries,
+			$wpdb->num_queries,
+			'A site ahead of this code has nothing here to run.'
+		);
+		$this->assertSame(
+			WP_SYNC_STORAGE_DB_VERSION + 1,
+			(int) get_option( 'sync_storage_db_version' ),
+			'The recorded version must not be rewritten backward.'
 		);
 	}
 

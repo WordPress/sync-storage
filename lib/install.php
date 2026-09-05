@@ -35,11 +35,17 @@ function sync_storage_install( $network_wide = false ) {
 
 /**
  * Set up the plugin for the current site.
+ *
+ * Routed through sync_storage_upgrade_table(), not a direct call to
+ * sync_storage_create_table(): deactivating this plugin does not drop its
+ * table, so activating a newer version against a site that ran an older one
+ * is an upgrade, not a fresh install, and dbDelta cannot express the rename
+ * that upgrade may need on its own.
  */
 function sync_storage_install_site() {
 	Sync_Storage_Logger::event( 'Installation started' );
 
-	sync_storage_create_table();
+	sync_storage_upgrade_table();
 
 	if ( ! wp_next_scheduled( 'sync_storage_cleanup_stale_updates' ) ) {
 		wp_schedule_event( time(), 'daily', 'sync_storage_cleanup_stale_updates' );
