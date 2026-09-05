@@ -2,6 +2,7 @@
 	"name": "sync-storage",
 	"private": true,
 	"scripts": {
+		"postinstall": "node scripts/patch-wp-env-bullseye.js",
 		"env:start": "wp-env start",
 		"env:start:trunk": "bash build-gutenberg.sh && wp-env start",
 		"env:stop": "wp-env stop",
