@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sync Storage
  * Description: WP_Sync_Storage implementation for WordPress collaborative editing.
- * Version: 0.1.15
+ * Version: 0.1.16
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Requires Plugins: presence-api
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WP_SYNC_STORAGE_VERSION', '0.1.15' );
+define( 'WP_SYNC_STORAGE_VERSION', '0.1.16' );
 
 /*
  * The shape of wp_collaboration, versioned apart from the plugin because most
