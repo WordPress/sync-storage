@@ -6,7 +6,7 @@
 > **Status:** Archived
 
 > [!IMPORTANT]
-> **Archived.** This plugin's CRDT-update storage is superseded by [gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines)'s `WP_Sync_Table_Storage`. Its awareness handling, delegating room occupancy to [presence-api](https://github.com/WordPress/presence-api)'s `wp_presence` table rather than a separate mechanism, was correct, and gutenberg-sync-engines doesn't yet do the same. No longer maintained; kept for reference.
+> **Archived.** This plugin's CRDT-update storage is superseded by [gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines)'s `WP_Sync_Table_Storage`. Its awareness handling stores room occupancy in [presence-api](https://github.com/WordPress/presence-api)'s `wp_presence` table instead of building a separate mechanism, and gutenberg-sync-engines hasn't picked that up yet. It's kept here for reference, but no longer maintained.
 
 Storage layer for Gutenberg's real-time collaborative editing.
 
